@@ -133,7 +133,8 @@ function createFish(opts = {}) {
   el.style.top = `${y}px`;
   el.style.filter = `hue-rotate(${hue}deg) saturate(1.25)`;
   el.style.transform = `translate(0,0) scale(${size})`;
-  el.style.backgroundImage = `url("assets/sprites/${species.defaultSprite}")`;
+  el.style.setProperty("--hue", hue);
+  el.style.backgroundImage = "none";
   el.addEventListener('click', () => onFishClick(fish.id));
 
   const fish = {
