@@ -40,11 +40,12 @@ const TRAITS = [
 ];
 
 const SPECIES = [
-  // sprite base names you actually have in /assets/sprites
   { key: "octi",   defaultSprite: "octi-idle-1.png" },
   { key: "jelly",  defaultSprite: "jelly-attack-1.png" },
   { key: "eel",    defaultSprite: "eel-idle-1.png" },
   { key: "marlin", defaultSprite: "marlin-idle-1.png" },
+  { key: "turtle", defaultSprite: "turtle-idle-1.png"},
+  { key: "angler", defaultSprite: "angler-idle-1.png"}
 ];
 
 const EVENT_ENCOUNTER_CHANCES = {
