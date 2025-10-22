@@ -41,13 +41,15 @@ html, body {
 }
 
 .fish {
-  width: 64px;
-  height: 64px;
-  background-size: contain;
-  transform-origin: center;
+  position: absolute;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background-color: hsl(calc(var(--hue, 0) * 1deg), 85%, 60%);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
   pointer-events: auto;
   cursor: crosshair;
-  filter: saturate(1.25) drop-shadow(0 4px 8px rgba(0,0,0,0.35));
+  transition: transform 0.15s ease-out;
 }
 
 .emote {
