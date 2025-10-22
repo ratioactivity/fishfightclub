@@ -30,26 +30,39 @@ html, body {
   background: #092034;
 }
 #background {
-  position: absolute; inset: 0;
-  width: 100%; height: 100%; object-fit: cover;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 0;
   filter: brightness(0.9) saturate(1.1);
   pointer-events: none;
 }
-#fish-layer, #emote-layer {
-  position: absolute; inset: 0;
+
+#fish-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 2;          /* <-- bring fish above background */
+  pointer-events: none;
+}
+
+#emote-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 3;          /* emotes above fish */
   pointer-events: none;
 }
 
 .fish {
   position: absolute;
-  width: 48px;
-  height: 48px;
+  width: 64px;
+  height: 64px;
   border-radius: 50%;
   background-color: hsl(calc(var(--hue, 0) * 1deg), 85%, 60%);
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
   pointer-events: auto;
   cursor: crosshair;
-  transition: transform 0.15s ease-out;
 }
 
 .emote {
