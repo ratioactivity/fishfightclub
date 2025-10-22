@@ -190,7 +190,6 @@ function createFish(opts = {}) {
   el.style.top = `${y}px`;
   el.style.filter = `hue-rotate(${hue}deg) saturate(1.25)`;
   el.style.transform = `translate(0,0) scale(${size})`;
-  el.style.filter = `hue-rotate(${hue}deg) saturate(1.25)`;
   el.style.backgroundImage = `url("assets/sprites/${species.defaultSprite}")`;
   el.addEventListener('click', () => onFishClick(fish.id));
 
@@ -402,19 +401,20 @@ function tick(ts) {
     const facing = f.vx >= 0 ? 1 : -1;
     f.el.style.transform = `scale(${f.size * facing}, ${f.size})`;
     
-    // --- sprite animation ---
-if (!f.nextFrameAt || ts > f.nextFrameAt) {
-  const anims = ANIM_FRAMES[f.species] || {};
-  const frames = anims.walk || [f.sprite];
-  if (!f.animIndex) f.animIndex = 0;
+    // [START ANIMATION SNIPPET]
+    if (!f.nextFrameAt || ts > f.nextFrameAt) {
+      const anims = ANIM_FRAMES[f.species] || {};
+      const frames = anims.walk || [f.sprite];
+      if (!f.animIndex) f.animIndex = 0;
 
-  const moving = Math.abs(f.vx) + Math.abs(f.vy) > 0.2;
-  if (moving) {
-    f.animIndex = (f.animIndex + 1) % frames.length;
-    f.el.style.backgroundImage = `url("assets/sprites/${frames[f.animIndex]}")`;
+      const moving = Math.abs(f.vx) + Math.abs(f.vy) > 0.2;
+      if (moving) {
+        f.animIndex = (f.animIndex + 1) % frames.length;
+        f.el.style.backgroundImage = `url("assets/sprites/${frames[f.animIndex]}")`;
+    }
+    f.nextFrameAt = ts + (moving ? 160 : 600);
   }
-  f.nextFrameAt = ts + (moving ? 160 : 600);
-}
+  // [END ANIMATION SNIPPET]
 
   }
 
