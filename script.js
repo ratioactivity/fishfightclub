@@ -40,13 +40,70 @@ const TRAITS = [
 ];
 
 const SPECIES = [
-  { key: "octi",   defaultSprite: "octi-idle-1.png" },
-  { key: "jelly",  defaultSprite: "jelly-attack-1.png" },
-  { key: "eel",    defaultSprite: "eel-idle-1.png" },
+  { key: "angler", defaultSprite: "angler-idle-1.png" },
+  { key: "eel", defaultSprite: "eel-idle-1.png" },
+  { key: "jelly", defaultSprite: "jelly-idle-1.png" },
   { key: "marlin", defaultSprite: "marlin-idle-1.png" },
-  { key: "turtle", defaultSprite: "turtle-idle-1.png"},
-  { key: "angler", defaultSprite: "angler-idle-1.png"}
+  { key: "octi", defaultSprite: "octi-idle-1.png" },
+  { key: "turtle", defaultSprite: "turtle-idle-1.png" },
 ];
+
+const ANIM_FRAMES = {
+  angler: {
+    attack: ["angler-attack-1.png","angler-attack-2.png","angler-attack-3.png","angler-attack-4.png","angler-attack-5.png","angler-attack-6.png"],
+    death:  ["angler-death-1.png","angler-death-2.png","angler-death-3.png","angler-death-4.png","angler-death-5.png","angler-death-6.png"],
+    hurt:   ["angler-hurt-1.png","angler-hurt-2.png"],
+    idle:   ["angler-idle-1.png","angler-idle-2.png","angler-idle-3.png","angler-idle-4.png"],
+    walk:   ["angler-walk-1.png","angler-walk-2.png","angler-walk-3.png","angler-walk-4.png"],
+  },
+
+  eel: {
+    attack: ["eel-attack-1.png","eel-attack-2.png","eel-attack-3.png","eel-attack-4.png","eel-attack-5.png","eel-attack-6.png"],
+    death:  ["eel-death-1.png","eel-death-2.png","eel-death-3.png","eel-death-4.png","eel-death-5.png","eel-death-6.png"],
+    hurt:   ["eel-hurt-1.png","eel-hurt-2.png"],
+    idle:   ["eel-idle-1.png","eel-idle-2.png","eel-idle-3.png","eel-idle-4.png"],
+    walk:   ["eel-walk-1.png","eel-walk-2.png","eel-walk-3.png","eel-walk-4.png","eel-walk-5.png","eel-walk-6.png"],
+  },
+
+  jelly: {
+    attack: ["jelly-attack-1.png","jelly-attack-2.png","jelly-attack-3.png","jelly-attack-4.png"],
+    death:  ["jelly-death-1.png","jelly-death-2.png","jelly-death-3.png","jelly-death-4.png","jelly-death-5.png","jelly-death-6.png"],
+    hurt:   ["jelly-hurt-1.png","jelly-hurt-2.png"],
+    idle:   ["jelly-idle-1.png","jelly-idle-2.png","jelly-idle-3.png","jelly-idle-4.png"],
+    walk:   ["jelly-walk-1.png","jelly-walk-2.png","jelly-walk-3.png","jelly-walk-4.png"],
+  },
+
+  marlin: {
+    attack: ["marlin-attack-1.png","marlin-attack-2.png","marlin-attack-3.png","marlin-attack-4.png","marlin-attack-5.png","marlin-attack-6.png"],
+    death:  ["marlin-death-1.png","marlin-death-2.png","marlin-death-3.png","marlin-death-4.png","marlin-death-5.png","marlin-death-6.png"],
+    hurt:   ["marlin-hurt-1.png","marlin-hurt-2.png"],
+    idle:   ["marlin-idle-1.png","marlin-idle-2.png","marlin-idle-3.png","marlin-idle-4.png"],
+    walk:   ["marlin-walk-1.png","marlin-walk-2.png","marlin-walk-3.png","marlin-walk-4.png"],
+  },
+
+  octi: {
+    attack: ["octi-attack-1.png","octi-attack-2.png","octi-attack-3.png","octi-attack-4.png","octi-attack-5.png","octi-attack-6.png"],
+    death:  ["octi-death-1.png","octi-death-2.png","octi-death-3.png","octi-death-4.png","octi-death-5.png","octi-death-6.png"],
+    hurt:   ["octi-hurt-1.png","octi-hurt-2.png"],
+    idle:   ["octi-idle-1.png","octi-idle-2.png","octi-idle-3.png","octi-idle-4.png","octi-idle-5.png","octi-idle-6.png"],
+    walk:   ["octi-walk-1.png","octi-walk-2.png","octi-walk-3.png","octi-walk-4.png","octi-walk-5.png","octi-walk-6.png"],
+  },
+
+  turtle: {
+    attack: ["turtle-attack-1.png","turtle-attack-2.png","turtle-attack-3.png","turtle-attack-4.png","turtle-attack-5.png","turtle-attack-6.png"],
+    death:  ["turtle-death-1.png","turtle-death-2.png","turtle-death-3.png","turtle-death-4.png","turtle-death-5.png","turtle-death-6.png"],
+    hurt:   ["turtle-hurt-1.png","turtle-hurt-2.png"],
+    idle:   ["turtle-idle-1.png","turtle-idle-2.png","turtle-idle-3.png","turtle-idle-4.png"],
+    walk:   ["turtle-walk-1.png","turtle-walk-2.png","turtle-walk-3.png","turtle-walk-4.png","turtle-walk-5.png","turtle-walk-6.png"],
+  },
+};
+
+const ANIM_FRAMES = {
+  octi:   ["octi-idle-1.png","octi-idle-2.png","octi-idle-3.png","octi-idle-4.png"],
+  jelly:  ["jelly-attack-1.png","jelly-attack-2.png","jelly-attack-3.png","jelly-attack-4.png"],
+  eel:    ["eel-idle-1.png","eel-idle-2.png","eel-idle-3.png","eel-idle-4.png"],
+  marlin: ["marlin-idle-1.png","marlin-idle-2.png","marlin-idle-3.png","marlin-idle-4.png"],
+};
 
 const EVENT_ENCOUNTER_CHANCES = {
   passive: { fight: 0.10, breed: 0.10, nothing: 0.80 },
@@ -133,8 +190,8 @@ function createFish(opts = {}) {
   el.style.top = `${y}px`;
   el.style.filter = `hue-rotate(${hue}deg) saturate(1.25)`;
   el.style.transform = `translate(0,0) scale(${size})`;
-  el.style.setProperty("--hue", hue);
-  el.style.backgroundImage = "none";
+  el.style.filter = `hue-rotate(${hue}deg) saturate(1.25)`;
+  el.style.backgroundImage = `url("assets/sprites/${species.defaultSprite}")`;
   el.addEventListener('click', () => onFishClick(fish.id));
 
   const fish = {
@@ -344,6 +401,21 @@ function tick(ts) {
     f.el.style.top = `${f.y}px`;
     const facing = f.vx >= 0 ? 1 : -1;
     f.el.style.transform = `scale(${f.size * facing}, ${f.size})`;
+    
+    // --- sprite animation ---
+if (!f.nextFrameAt || ts > f.nextFrameAt) {
+  const anims = ANIM_FRAMES[f.species] || {};
+  const frames = anims.walk || [f.sprite];
+  if (!f.animIndex) f.animIndex = 0;
+
+  const moving = Math.abs(f.vx) + Math.abs(f.vy) > 0.2;
+  if (moving) {
+    f.animIndex = (f.animIndex + 1) % frames.length;
+    f.el.style.backgroundImage = `url("assets/sprites/${frames[f.animIndex]}")`;
+  }
+  f.nextFrameAt = ts + (moving ? 160 : 600);
+}
+
   }
 
   // passive collisions
@@ -358,7 +430,7 @@ function tick(ts) {
       }
     }
   }
-
+  
   requestAnimationFrame(tick);
 }
 
