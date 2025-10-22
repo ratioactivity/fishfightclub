@@ -1,20 +1,35 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="utf-8" />
   <title>Fish Fight Club</title>
-  <link rel="stylesheet" href="styles.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link href="./style.css" rel="stylesheet" />
 </head>
 <body>
-  <main id="game">
-    <button id="toggleLog">Toggle Log</button>
-    <section id="eventLog" class="hidden">
-      <h2>Event Log</h2>
-      <ul id="logEntries"></ul>
-    </section>
-    <div id="tank"></div>
-  </main>
-  <script src="script.js"></script>
+  <div id="ui-bar">
+    <button id="toggle-events">Events</button>
+    <button id="toggle-inventory">Inventory</button>
+    <span id="fish-count"></span>
+  </div>
+
+  <div id="aquarium">
+    <img id="background" src="assets/aquarium.jpg" alt="aquarium" />
+    <div id="fish-layer"></div>
+    <div id="emote-layer"></div>
+  </div>
+
+  <div id="panel-wrap">
+    <div id="events-panel" class="panel hidden">
+      <div class="panel-header">Event Log</div>
+      <div id="events"></div>
+    </div>
+    <div id="inventory-panel" class="panel hidden">
+      <div class="panel-header">Inventory</div>
+      <div id="inventory"></div>
+    </div>
+  </div>
+
+  <script src="./script.js"></script>
 </body>
 </html>
