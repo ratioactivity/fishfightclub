@@ -41,9 +41,9 @@ html, body {
 }
 
 .fish {
-  position: absolute;
-  width: 96px; height: 96px;
-  background-size: contain; background-repeat: no-repeat;
+  width: 64px;
+  height: 64px;
+  background-size: contain;
   transform-origin: center;
   pointer-events: auto;
   cursor: crosshair;
