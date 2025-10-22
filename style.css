@@ -1,56 +1,90 @@
-body {
+* { box-sizing: border-box; }
+html, body {
+  height: 100%;
   margin: 0;
-  background: #000;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-  overflow: hidden;
-  font-family: sans-serif;
+  font-family: system-ui, Segoe UI, Roboto, sans-serif;
+  color: #e7f5ff;
+  background: #0b1b2a;
 }
 
-#tank {
+#ui-bar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 10px;
+  background: #0f2538;
+  border-bottom: 1px solid #0a1520;
+}
+#ui-bar button {
+  background: #16344f; border: 1px solid #1a3d5b; color: #e7f5ff;
+  padding: 6px 10px; border-radius: 6px; cursor: pointer;
+}
+#ui-bar button:hover { filter: brightness(1.1); }
+#fish-count { margin-left: auto; opacity: 0.8; }
+
+#aquarium {
   position: relative;
-  width: 800px;
-  height: 600px;
-  background: url("assets/aquarium.jpg") center/cover no-repeat;
-  overflow: visible;
-  border: 4px solid #7fc4ff;
-  border-radius: 12px;
+  width: 100%;
+  height: calc(100vh - 52px);
+  overflow: hidden;
+  background: #092034;
+}
+#background {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%; object-fit: cover;
+  filter: brightness(0.9) saturate(1.1);
+  pointer-events: none;
+}
+#fish-layer, #emote-layer {
+  position: absolute; inset: 0;
+  pointer-events: none;
 }
 
 .fish {
   position: absolute;
-  width: 64px;
-  height: 64px;
-  transition: left 2s linear, top 2s linear;
-}
-
-.fish img {
-  width: 100%;
-  height: 100%;
+  width: 96px; height: 96px;
+  background-size: contain; background-repeat: no-repeat;
   transform-origin: center;
+  pointer-events: auto;
+  cursor: crosshair;
+  filter: saturate(1.25) drop-shadow(0 4px 8px rgba(0,0,0,0.35));
 }
 
 .emote {
   position: absolute;
-  width: 24px;
-  height: 24px;
-  z-index: 100;
-  pointer-events: none;
+  width: 28px; height: 28px;
+  background-size: contain; background-repeat: no-repeat;
+  opacity: 0; transform: translate(-50%, -90%);
+  transition: opacity 120ms ease-out, transform 160ms ease-out;
+  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6));
 }
 
-.hidden { display: none; }
-
-#eventLog {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  width: 200px;
-  background: rgba(255,255,255,0.8);
-  border-radius: 8px;
-  padding: 6px;
-  font-size: 12px;
-  overflow-y: auto;
-  max-height: 400px;
+.panel.hidden { display: none; }
+#panel-wrap {
+  position: absolute; right: 12px; top: 64px;
+  display: flex; flex-direction: column; gap: 10px;
 }
+.panel {
+  width: 320px; height: 280px; background: rgba(9,22,33,0.9);
+  border: 1px solid #12324b; border-radius: 8px; overflow: hidden;
+  backdrop-filter: blur(4px);
+}
+.panel-header {
+  padding: 8px 10px; background: #0c2a41; font-weight: 600; border-bottom: 1px solid #0d2133;
+}
+#events, #inventory {
+  height: calc(100% - 40px);
+  overflow: auto; padding: 10px;
+  scrollbar-width: thin; scrollbar-color: #1a3d5b transparent;
+}
+.log-line { margin: 4px 0; font-size: 14px; opacity: 0.92; }
+.timestamp { opacity: 0.6; margin-right: 6px; font-size: 12px; }
+.item {
+  display: flex; align-items: center; gap: 8px; margin: 8px 0;
+  padding: 6px; background: #11283a; border: 1px solid #15344c; border-radius: 6px;
+}
+.item img { width: 28px; height: 28px; object-fit: contain; }
+.item button {
+  margin-left: auto; padding: 4px 8px; background: #1c486b; border: 1px solid #205277; color: #e7f5ff; border-radius: 6px; cursor: pointer;
+}
+.item button:hover { filter: brightness(1.1); }
