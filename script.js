@@ -90,7 +90,7 @@ function logEvent(text) {
 function emoteAt(x, y, key) {
   const node = document.createElement('div');
   node.className = 'emote';
-  const path = `assets/emotes/${key}.png`;
+  const path = `assets/emotes/${key}.gif`;
   // fallback to text if missing image
   node.style.backgroundImage = `url("${path}")`;
   node.dataset.alt = key;
