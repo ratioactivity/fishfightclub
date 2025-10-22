@@ -95,7 +95,7 @@ const ANIM_FRAMES = {
     hurt:   ["turtle-hurt-1.png","turtle-hurt-2.png"],
     idle:   ["turtle-idle-1.png","turtle-idle-2.png","turtle-idle-3.png","turtle-idle-4.png"],
     walk:   ["turtle-walk-1.png","turtle-walk-2.png","turtle-walk-3.png","turtle-walk-4.png","turtle-walk-5.png","turtle-walk-6.png"],
-  }
+  },
 };
 
 const EVENT_ENCOUNTER_CHANCES = {
