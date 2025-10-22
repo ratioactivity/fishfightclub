@@ -98,13 +98,6 @@ const ANIM_FRAMES = {
   },
 };
 
-const ANIM_FRAMES = {
-  octi:   ["octi-idle-1.png","octi-idle-2.png","octi-idle-3.png","octi-idle-4.png"],
-  jelly:  ["jelly-attack-1.png","jelly-attack-2.png","jelly-attack-3.png","jelly-attack-4.png"],
-  eel:    ["eel-idle-1.png","eel-idle-2.png","eel-idle-3.png","eel-idle-4.png"],
-  marlin: ["marlin-idle-1.png","marlin-idle-2.png","marlin-idle-3.png","marlin-idle-4.png"],
-};
-
 const EVENT_ENCOUNTER_CHANCES = {
   passive: { fight: 0.10, breed: 0.10, nothing: 0.80 },
   instigated: { fight: 0.25, breed: 0.25, nothing: 0.50 },
