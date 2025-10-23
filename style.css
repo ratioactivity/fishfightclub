@@ -69,8 +69,8 @@ html, body {
 
 .emote {
   position: absolute;
-  width: 72px;   /* try 96px if you want HUGE */
-  height: 72px;
+  width: 96px;   /* try 96px if you want HUGE */
+  height: 96px;
   background-size: contain;
   background-repeat: no-repeat;
   opacity: 0;
