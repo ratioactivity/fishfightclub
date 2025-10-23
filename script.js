@@ -1,6 +1,6 @@
 // ======= CONFIG =======
 const MAX_FISH = 10;
-const INITIAL_FISH = 4; // start with four
+const INITIAL_FISH = 4;
 const ARENA = { w: 0, h: 0 };
 
 const NAME_POOL = [
@@ -39,15 +39,17 @@ const TRAITS = [
   "Had Braces in 2nd Grade","Lobster Lover","Doesn't Like Indie","Super Rich","John Cena's Biggest Fan"
 ];
 
+// Species and default thumbnails
 const SPECIES = [
   { key: "angler", defaultSprite: "angler-idle-1.png" },
-  { key: "eel", defaultSprite: "eel-idle-1.png" },
-  { key: "jelly", defaultSprite: "jelly-idle-1.png" },
+  { key: "eel",    defaultSprite: "eel-idle-1.png" },
+  { key: "jelly",  defaultSprite: "jelly-idle-1.png" },
   { key: "marlin", defaultSprite: "marlin-idle-1.png" },
-  { key: "octi", defaultSprite: "octi-idle-1.png" },
+  { key: "octi",   defaultSprite: "octi-idle-1.png" },
   { key: "turtle", defaultSprite: "turtle-idle-1.png" },
 ];
 
+// Full animation maps (adjust file names to what’s in assets/sprites)
 const ANIM_FRAMES = {
   angler: {
     attack: ["angler-attack-1.png","angler-attack-2.png","angler-attack-3.png","angler-attack-4.png","angler-attack-5.png","angler-attack-6.png"],
@@ -56,7 +58,6 @@ const ANIM_FRAMES = {
     idle:   ["angler-idle-1.png","angler-idle-2.png","angler-idle-3.png","angler-idle-4.png"],
     walk:   ["angler-walk-1.png","angler-walk-2.png","angler-walk-3.png","angler-walk-4.png"],
   },
-
   eel: {
     attack: ["eel-attack-1.png","eel-attack-2.png","eel-attack-3.png","eel-attack-4.png","eel-attack-5.png","eel-attack-6.png"],
     death:  ["eel-death-1.png","eel-death-2.png","eel-death-3.png","eel-death-4.png","eel-death-5.png","eel-death-6.png"],
@@ -64,7 +65,6 @@ const ANIM_FRAMES = {
     idle:   ["eel-idle-1.png","eel-idle-2.png","eel-idle-3.png","eel-idle-4.png"],
     walk:   ["eel-walk-1.png","eel-walk-2.png","eel-walk-3.png","eel-walk-4.png","eel-walk-5.png","eel-walk-6.png"],
   },
-
   jelly: {
     attack: ["jelly-attack-1.png","jelly-attack-2.png","jelly-attack-3.png","jelly-attack-4.png"],
     death:  ["jelly-death-1.png","jelly-death-2.png","jelly-death-3.png","jelly-death-4.png","jelly-death-5.png","jelly-death-6.png"],
@@ -72,7 +72,6 @@ const ANIM_FRAMES = {
     idle:   ["jelly-idle-1.png","jelly-idle-2.png","jelly-idle-3.png","jelly-idle-4.png"],
     walk:   ["jelly-walk-1.png","jelly-walk-2.png","jelly-walk-3.png","jelly-walk-4.png"],
   },
-
   marlin: {
     attack: ["marlin-attack-1.png","marlin-attack-2.png","marlin-attack-3.png","marlin-attack-4.png","marlin-attack-5.png","marlin-attack-6.png"],
     death:  ["marlin-death-1.png","marlin-death-2.png","marlin-death-3.png","marlin-death-4.png","marlin-death-5.png","marlin-death-6.png"],
@@ -80,7 +79,6 @@ const ANIM_FRAMES = {
     idle:   ["marlin-idle-1.png","marlin-idle-2.png","marlin-idle-3.png","marlin-idle-4.png"],
     walk:   ["marlin-walk-1.png","marlin-walk-2.png","marlin-walk-3.png","marlin-walk-4.png"],
   },
-
   octi: {
     attack: ["octi-attack-1.png","octi-attack-2.png","octi-attack-3.png","octi-attack-4.png","octi-attack-5.png","octi-attack-6.png"],
     death:  ["octi-death-1.png","octi-death-2.png","octi-death-3.png","octi-death-4.png","octi-death-5.png","octi-death-6.png"],
@@ -88,7 +86,6 @@ const ANIM_FRAMES = {
     idle:   ["octi-idle-1.png","octi-idle-2.png","octi-idle-3.png","octi-idle-4.png","octi-idle-5.png","octi-idle-6.png"],
     walk:   ["octi-walk-1.png","octi-walk-2.png","octi-walk-3.png","octi-walk-4.png","octi-walk-5.png","octi-walk-6.png"],
   },
-
   turtle: {
     attack: ["turtle-attack-1.png","turtle-attack-2.png","turtle-attack-3.png","turtle-attack-4.png","turtle-attack-5.png","turtle-attack-6.png"],
     death:  ["turtle-death-1.png","turtle-death-2.png","turtle-death-3.png","turtle-death-4.png","turtle-death-5.png","turtle-death-6.png"],
@@ -99,12 +96,12 @@ const ANIM_FRAMES = {
 };
 
 const EVENT_ENCOUNTER_CHANCES = {
-  passive: { fight: 0.10, breed: 0.10, nothing: 0.80 },
+  passive:    { fight: 0.10, breed: 0.10, nothing: 0.80 },
   instigated: { fight: 0.25, breed: 0.25, nothing: 0.50 },
 };
 
-const ENCOUNTER_COOLDOWN_MS = 30 * 60 * 1000; // a fish shouldn't trigger > ~2/hr
-const INJURY_COOLDOWN_MS = 60 * 60 * 1000;
+const ENCOUNTER_COOLDOWN_MS = 30 * 60 * 1000; // per fish — prevents >2/hr-ish
+const INJURY_COOLDOWN_MS    = 60 * 60 * 1000;
 
 // ======= STATE =======
 const DOM = {
@@ -119,8 +116,8 @@ const DOM = {
 };
 
 let FISH = [];
-let INVENTORY = []; // { id, key, name, mode, use: fn } later
-let selection = []; // clicked fish ids
+let INVENTORY = [];
+let selection = [];
 let lastTick = performance.now();
 
 // ======= UTILS =======
@@ -140,22 +137,25 @@ function logEvent(text) {
 function emoteAt(x, y, key) {
   const node = document.createElement('div');
   node.className = 'emote';
-  const path = `assets/emotes/${key}.gif`;
-  // fallback to text if missing image
-  node.style.backgroundImage = `url("${path}")`;
-  node.dataset.alt = key;
+  node.style.backgroundImage = `url("assets/emotes/${key}.gif")`;
   node.style.left = `${x}px`;
-  node.style.top = `${y}px`;
+  node.style.top  = `${y}px`;
   DOM.emoteLayer.appendChild(node);
+  // rise + fade
   requestAnimationFrame(() => {
     node.style.opacity = 1;
-    node.style.transform = 'translate(-50%, -110%)';
+    node.style.transform = 'translate(-50%, -70%)';
   });
   setTimeout(() => {
     node.style.opacity = 0;
-    node.style.transform = 'translate(-50%, -80%)';
-    setTimeout(() => node.remove(), 200);
-  }, 900);
+    node.style.transform = 'translate(-50%, -40%)';
+    setTimeout(() => node.remove(), 220);
+  }, 1000);
+}
+
+function emoteAtCenterOf(fish, key) {
+  const r = fish.el.getBoundingClientRect();
+  emoteAt(r.left + r.width/2, r.top + r.height/2, key);
 }
 
 function updateFishCount() {
@@ -167,24 +167,22 @@ let ID_SEQ = 1;
 
 function createFish(opts = {}) {
   const species = opts.species || randChoice(SPECIES);
-  const hue = randInt(0, 359);
-  const size = opts.size ?? 1.0; // babies start at 0.75
-  const x = randInt(32, ARENA.w - 128);
-  const y = randInt(32, ARENA.h - 128);
-  const name = opts.name || randChoice(NAME_POOL);
-  const trait = randChoice(TRAITS);
-  const power = opts.power ?? randInt(0, 100);
-  const canFightAt = 0;
-  const wins = 0;
+  const hue     = randInt(0, 359);
+  const size    = opts.size ?? 1.0;
+  const x       = randInt(32, Math.max(40, ARENA.w - 128));
+  const y       = randInt(32, Math.max(40, ARENA.h - 128));
+  const name    = opts.name || randChoice(NAME_POOL);
+  const trait   = randChoice(TRAITS);
+  const power   = opts.power ?? randInt(0, 100);
 
   const el = document.createElement('div');
   el.className = 'fish';
   el.style.left = `${x}px`;
-  el.style.top = `${y}px`;
-  el.style.filter = `hue-rotate(${hue}deg) saturate(1.25)`;
+  el.style.top  = `${y}px`;
   el.style.transform = `translate(0,0) scale(${size})`;
+  el.style.filter = `hue-rotate(${hue}deg) saturate(1.25)`;
   el.style.backgroundImage = `url("assets/sprites/${species.defaultSprite}")`;
-  el.addEventListener('click', () => onFishClick(fish.id));
+  el.title = `${name} — ${trait}`;
 
   const fish = {
     id: ID_SEQ++,
@@ -197,12 +195,15 @@ function createFish(opts = {}) {
     vy: (Math.random() * 0.6 + 0.2) * (Math.random() < 0.5 ? -1 : 1),
     pauseUntil: 0,
     lastEncounterAt: 0,
-    canFightAt,
-    wins,
-    growthEndAt: opts.growthEndAt || null, // babies grow to 1.0 over time
+    canFightAt: 0,
+    wins: 0,
+    growthEndAt: opts.growthEndAt || null,
+    mode: 'walk',        // animation mode: walk|idle|attack|hurt|death
     dead: false,
     el,
   };
+
+  el.addEventListener('click', () => onFishClick(fish.id));
 
   DOM.fishLayer.appendChild(el);
   FISH.push(fish);
@@ -212,50 +213,46 @@ function createFish(opts = {}) {
 }
 
 function removeFish(fish) {
-  fish.dead = true;
-  fish.el.remove();
   FISH = FISH.filter(f => f.id !== fish.id);
   updateFishCount();
+  fish.el.remove();
 }
 
-// ======= INPUT =======
+// ======= INPUT (instigated encounters) =======
 function onFishClick(id) {
   const f = FISH.find(x => x.id === id);
   if (!f) return;
   selection.push(f);
-  const rect = f.el.getBoundingClientRect();
-  emoteAt(rect.left + rect.width/2, rect.top + rect.height/2, 'bubble');
+  emoteAtCenterOf(f, 'bubble');
 
   if (selection.length === 2) {
     const [a, b] = selection;
     selection = [];
-    if (a.id !== b.id) {
-      triggerEncounter(a, b, 'instigated');
-    }
+    if (a.id !== b.id) triggerEncounter(a, b, 'instigated');
   }
 }
 
 // ======= ENCOUNTERS =======
 function canPassiveEncounter(f) {
-  // prevent spamming: at most ~every 30 minutes per fish
   return (now() - f.lastEncounterAt) > ENCOUNTER_COOLDOWN_MS;
 }
 
 function triggerEncounter(a, b, mode = 'passive') {
   if (a.dead || b.dead) return;
-
   if (mode === 'passive' && (!canPassiveEncounter(a) || !canPassiveEncounter(b))) return;
 
   const odds = EVENT_ENCOUNTER_CHANCES[mode];
   const roll = Math.random();
+
   let outcome = 'nothing';
-  if (roll < odds.fight) outcome = 'fight';
+  if      (roll < odds.fight) outcome = 'fight';
   else if (roll < odds.fight + odds.breed) outcome = 'breed';
 
   const center = midpoint(a, b);
   if (outcome === 'fight') {
     emoteAt(center.x, center.y, 'fight');
     handleFight(a, b);
+    flashText && flashText('FIGHT!', 'red');
   } else if (outcome === 'breed') {
     emoteAt(center.x, center.y, 'love');
     handleBreed(a, b);
@@ -273,22 +270,26 @@ function midpoint(a, b) {
   const rb = b.el.getBoundingClientRect();
   return {
     x: (ra.left + ra.width/2 + rb.left + rb.width/2) / 2,
-    y: (ra.top + ra.height/2 + rb.top + rb.height/2) / 2,
+    y: (ra.top  + ra.height/2 + rb.top  + rb.height/2) / 2,
   };
 }
 
 function handleFight(a, b) {
   if (now() < a.canFightAt || now() < b.canFightAt) {
-    logEvent(`Fight fizzled (cooldown).`);
+    logEvent(`Fight fizzled (injury cooldown).`);
     return;
   }
-  const A = a.power;
-  const B = b.power;
-  let winner = a, loser = b;
-  if (B > A) { winner = b; loser = a; }
+
+  // choose winner by hidden power
+  const winner = (b.power > a.power) ? b : a;
+  const loser  = (winner === a) ? b : a;
+
+  // play brief attack/hurt animation frames
+  setMode(winner, 'attack', 400);
+  setMode(loser,  'hurt',   400);
+
   logEvent(`${winner.name} fought ${loser.name} — ${winner.name} wins!`);
 
-  // winner item drop (Phase 2 adds real items; for now log only)
   winner.wins = (winner.wins || 0) + 1;
   if (winner.wins >= 10) {
     logEvent(`${winner.name} achieved 10 wins! Spawning 3 children… then perishes.`);
@@ -297,7 +298,7 @@ function handleFight(a, b) {
     return;
   }
 
-  // loser 50% death, else injured
+  // loser 50% death, else injury cooldown
   if (Math.random() < 0.5) {
     killFish(loser);
   } else {
@@ -308,41 +309,23 @@ function handleFight(a, b) {
 }
 
 function killFish(fish, silent=false) {
-  removeFish(fish);
-  emoteAtLastPos(fish, 'death');
-  if (!silent) logEvent(`${fish.name} has died.`);
-  f.el.style.filter = "brightness(5) saturate(0)";
-f.el.style.transition = "filter 0.3s ease";
-setTimeout(() => {
-  f.el.style.opacity = 0;
-  setTimeout(() => f.el.remove(), 300);
-}, 300);
-}
+  // dramatic flash + fade
+  fish.mode = 'death';
+  emoteAtCenterOf(fish, 'death');
 
-function emoteAtCenterOf(fish, key) {
-  const r = fish.el.getBoundingClientRect();
-  emoteAt(r.left + r.width/2, r.top + r.height/2, key);
-}
-function emoteAtLastPos(fish, key) {
-  // try using last known el rect, else use x/y
-  try {
-    const r = fish.el.getBoundingClientRect();
-    emoteAt(r.left + r.width/2, r.top + r.height/2, key);
-  } catch {
-    emoteAt(fish.x, fish.y, key);
-  }
-}
-
-function flashText(message, color="red") {
-  const el = document.getElementById("flashText");
-  el.textContent = message;
-  el.style.color = color;
-  el.style.opacity = 1;
-  setTimeout(() => el.style.opacity = 0, 1000);
+  fish.el.style.transition = 'filter 300ms ease, opacity 320ms ease 220ms';
+  fish.el.style.filter = 'brightness(2.2) saturate(0.2)';
+  setTimeout(() => {
+    fish.el.style.opacity = '0';
+    setTimeout(() => {
+      if (!silent) logEvent(`${fish.name} has died.`);
+      fish.dead = true;
+      removeFish(fish);
+    }, 340);
+  }, 200);
 }
 
 function handleBreed(a, b) {
-  // 25% chance to spawn a baby
   if (Math.random() < 0.25 && FISH.length < MAX_FISH) {
     const biasSpecies = Math.random() < 0.5 ? a.species : b.species;
     const parentSpecObj = SPECIES.find(s => s.key === biasSpecies) || randChoice(SPECIES);
@@ -351,21 +334,32 @@ function handleBreed(a, b) {
       size: 0.75,
       power: randInt(0, 100),
       growthEndAt: now() + 24*60*60*1000,
-      name: null, // random
+      name: null,
     });
     emoteAtCenterOf(baby, 'newfish');
     logEvent(`A new ${baby.species} was born! (smol)`);
   } else {
-    // unsuccessful
     const center = midpoint(a, b);
     emoteAt(center.x, center.y, 'cry');
     logEvent(`Breeding attempt between ${a.name} and ${b.name} failed.`);
   }
 }
 
+// ======= ANIMATION MODE HELPERS =======
+function setMode(fish, mode, revertAfterMs = null) {
+  fish.mode = mode;
+  fish.animIndex = 0;
+  fish.nextFrameAt = 0;
+  if (revertAfterMs) {
+    setTimeout(() => {
+      if (!fish.dead) { fish.mode = 'walk'; fish.animIndex = 0; }
+    }, revertAfterMs);
+  }
+}
+
 // ======= MOVEMENT / TICK =======
 function tick(ts) {
-  const dt = Math.min(32, ts - lastTick); // clamp
+  const dt = Math.min(32, ts - lastTick);
   lastTick = ts;
 
   for (const f of FISH) {
@@ -373,13 +367,15 @@ function tick(ts) {
 
     // random pauses
     if (f.pauseUntil > ts) {
-      // still paused
+      f.mode = 'idle';
     } else if (Math.random() < 0.002) {
       f.pauseUntil = ts + randInt(600, 2000);
+      f.mode = 'idle';
     } else {
       // move
       f.x += f.vx;
       f.y += f.vy;
+      f.mode = 'walk';
 
       // bounce
       const w = 96 * f.size, h = 96 * f.size;
@@ -402,118 +398,40 @@ function tick(ts) {
       if (f.size < 1) f.size = 1;
     }
 
-    // render
+    // render position + facing
     f.el.style.left = `${f.x}px`;
-    f.el.style.top = `${f.y}px`;
+    f.el.style.top  = `${f.y}px`;
     const facing = f.vx >= 0 ? 1 : -1;
     f.el.style.transform = `scale(${f.size * facing}, ${f.size})`;
-    
-    // [START ANIMATION SNIPPET]
+
+    // --- sprite animation (walk vs idle vs attack/hurt/death) ---
     if (!f.nextFrameAt || ts > f.nextFrameAt) {
       const anims = ANIM_FRAMES[f.species] || {};
-      const frames = anims.walk || [f.sprite];
+      const frames = (anims[f.mode] || anims.walk || [f.sprite]);
       if (!f.animIndex) f.animIndex = 0;
 
+      // only advance frames if there's >1 frame OR if moving
       const moving = Math.abs(f.vx) + Math.abs(f.vy) > 0.2;
-      if (moving) {
+      if (frames.length > 1 && (moving || f.mode !== 'walk')) {
         f.animIndex = (f.animIndex + 1) % frames.length;
-        f.el.style.backgroundImage = `url("assets/sprites/${frames[f.animIndex]}")`;
+      }
+      f.el.style.backgroundImage = `url("assets/sprites/${frames[f.animIndex]}")`;
+      f.nextFrameAt = ts + (f.mode === 'walk' ? 160 : 220);
     }
-    f.nextFrameAt = ts + (moving ? 160 : 600);
-  }
-  // [END ANIMATION SNIPPET]
-
   }
 
-  // passive collisions
+  // passive collisions → occasional encounter
   for (let i = 0; i < FISH.length; i++) {
     for (let j = i+1; j < FISH.length; j++) {
       const a = FISH[i], b = FISH[j];
       if (a.dead || b.dead) continue;
       if (rectsOverlap(a.el, b.el)) {
-        if (Math.random() < 0.003) { // occasionally treat as encounterable bump
-          triggerEncounter(a, b, 'passive');
-        }
+        if (Math.random() < 0.003) triggerEncounter(a, b, 'passive');
       }
     }
   }
-  
+
   requestAnimationFrame(tick);
-}
-
-function randomEncounter() {
-  if (FISH.length < 2) return;
-
-  // pick two random distinct fish
-  const a = FISH[Math.floor(Math.random() * FISH.length)];
-  let b;
-  do { b = FISH[Math.floor(Math.random() * FISH.length)]; } while (b === a);
-
-  // roll chance (only 10% chance of encounter)
-  if (Math.random() > 0.1) return;
-
-  // 10% fight, 10% breed, 80% nothing
-  const roll = Math.random();
-  if (roll < 0.1) {
-    startFight(a, b, false);
-  } else if (roll < 0.2) {
-    startBreed(a, b, false);
-  } else {
-    logEvent(`${a.name} bumped into ${b.name}. Nothing happened.`);
-    spawnEmote(a, "fail");
-    spawnEmote(b, "fail");
-  }
-}
-setInterval(randomEncounter, 60000); // every 60s for now, we can later make this 1hr for realism
-
-function startFight(a, b, instigated) {
-  const aPower = a.power || 0;
-  const bPower = b.power || 0;
-
-  const winner = aPower >= bPower ? a : b;
-  const loser = winner === a ? b : a;
-
-  logEvent(`${winner.name} defeated ${loser.name} in a fight!`);
-  spawnEmote(winner, "fight");
-  spawnEmote(loser, "cry");
-
-  // 50% chance of death
-  if (Math.random() < 0.5) {
-    killFish(loser);
-    spawnEmote(loser, "death");
-  } else {
-    loser.injured = true;
-    loser.injuredUntil = Date.now() + 3600000; // 1 hour cooldown
-  }
-
-  if (instigated) {
-    const reward = getRandomItem();
-    addToInventory(reward);
-  }
-}
-
-function startBreed(a, b, instigated) {
-  logEvent(`${a.name} and ${b.name} are feeling flirty...`);
-  spawnEmote(a, "love");
-  spawnEmote(b, "love");
-
-  if (Math.random() < 0.25) {
-    spawnBabyFish(a, b);
-  } else {
-    spawnEmote(a, "cry");
-    spawnEmote(b, "cry");
-    logEvent(`...but nothing happened.`);
-  }
-}
-
-function spawnBabyFish(a, b) {
-  const baby = createFish({
-    size: 0.75,
-  });
-  baby.sizeGrowthStart = Date.now();
-  baby.sizeGrowthRate = 1 / (24 * 60 * 60 * 1000); // grows to full in 1 day
-  logEvent(`A baby fish was born! Welcome ${baby.name}!`);
-  spawnEmote(baby, "newfish");
 }
 
 function rectsOverlap(aEl, bEl) {
@@ -530,6 +448,28 @@ function spawnBaby(parentA, parentB) {
     size: 0.75,
     growthEndAt: now() + 24*60*60*1000,
   });
+}
+
+// ======= OPTIONAL: periodic random encounter sampler (light spice) =======
+function randomEncounter() {
+  if (FISH.length < 2) return;
+  const a = FISH[Math.floor(Math.random() * FISH.length)];
+  let b;
+  do { b = FISH[Math.floor(Math.random() * FISH.length)]; } while (b === a);
+  if (Math.random() < 0.10) triggerEncounter(a, b, 'passive'); // 10% chance per minute
+}
+setInterval(randomEncounter, 60000);
+
+// ======= FLASH TEXT (hook for “FIGHT!” / “FUCK!”) =======
+function flashText(message, color="red") {
+  const el = document.getElementById("flashText");
+  if (!el) return;
+  el.textContent = message;
+  el.style.color = color;
+  el.style.animation = "none";
+  // reflow to restart animation
+  void el.offsetWidth;
+  el.style.animation = "popFlash 1.1s ease-out forwards";
 }
 
 // ======= BOOT =======
