@@ -69,11 +69,12 @@ html, body {
 
 .emote {
   position: absolute;
-  width: 28px; height: 28px;
-  background-size: contain; background-repeat: no-repeat;
-  opacity: 0; transform: translate(-50%, -90%);
-  transition: opacity 120ms ease-out, transform 160ms ease-out;
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.6));
+  width: 64px;
+  height: 64px;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  animation: emoteFloat 1.2s ease-out forwards;
+  z-index: 50;
 }
 
 .panel.hidden { display: none; }
