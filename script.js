@@ -416,7 +416,7 @@ function tick(ts) {
         f.animIndex = (f.animIndex + 1) % frames.length;
       }
       f.el.style.backgroundImage = `url("assets/sprites/${frames[f.animIndex]}")`;
-      f.nextFrameAt = ts + (f.mode === 'walk' ? 160 : 220);
+      f.nextFrameAt = ts + (f.mode === 'walk' ? 260 : 300);
     }
   }
 
