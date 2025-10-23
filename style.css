@@ -114,7 +114,10 @@ html, body {
 
 @font-face {
   font-family: 'Another Danger';
-  src: url('./assets/fonts/Another Danger.otf') format('opentype');
+  src: url('assets/fonts/Another%20Danger.otf') format('opentype'),
+       url('assets/fonts/Another-Danger.otf') format('opentype'),
+       url('fonts/Another%20Danger.otf') format('opentype'),
+       url('fonts/Another-Danger.otf') format('opentype');
   font-display: swap;
 }
 
