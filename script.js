@@ -333,6 +333,14 @@ function emoteAtLastPos(fish, key) {
   }
 }
 
+function flashText(message, color="red") {
+  const el = document.getElementById("flashText");
+  el.textContent = message;
+  el.style.color = color;
+  el.style.opacity = 1;
+  setTimeout(() => el.style.opacity = 0, 1000);
+}
+
 function handleBreed(a, b) {
   // 25% chance to spawn a baby
   if (Math.random() < 0.25 && FISH.length < MAX_FISH) {
