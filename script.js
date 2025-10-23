@@ -1,3 +1,5 @@
+import { CUSTOM_ITEM_DATA } from './items.js';
+
 // ======= CONFIG =======
 const MAX_FISH = 10;
 const INITIAL_FISH = 4;
@@ -183,30 +185,46 @@ const ITEM_FILES = [
   'wilddog.png',
 ];
 
-// Derive a catalog with sensible defaults. Specific effects/messages can be
-// filled in later by extending the entries returned here.
+// === ITEM CATALOG INITIALIZATION ===
+// Build a base catalog automatically from item image files.
+// Then merge in any custom behavior defined in CUSTOM_ITEM_DATA (from items.js).
+
+// 1. Base catalog (Codex-style generation)
 const ITEM_CATALOG = ITEM_FILES.map((file) => {
   const key = file
     .replace(/\.png$/i, '')
     .replace(/\s+/g, '_')
     .toLowerCase();
+
   const displayName = prettifyItemName(file);
+
   return {
     key,
     file,
     name: displayName,
-    // Default use type: Known Use (message visible on activation). Individual
-    // items can override this once their specific behavior is authored.
+    // Default use type: Known Use (message visible on activation).
     useType: 'KU',
     messageGet: (ctx = {}) => {
       const victor = ctx.winnerName || 'your champion';
       return `You obtained ${displayName} after ${victor}'s victory!`;
     },
     messageUse: `${displayName} was used.`,
+    // Placeholder for effects until custom data merges
+    effect: ({ fish, FISH, logEvent }) => {
+      logEvent(`${displayName} has no defined effect yet.`);
+    },
   };
 });
 
 let ITEM_ID_SEQ = 1;
+
+// 2. Merge custom definitions if available
+if (typeof CUSTOM_ITEM_DATA !== 'undefined') {
+  ITEM_CATALOG.forEach((item) => {
+    const custom = CUSTOM_ITEM_DATA[item.key];
+    if (custom) Object.assign(item, custom);
+  });
+}
 
 // ======= UTILS =======
 const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
