@@ -460,4 +460,9 @@ meat: {
       logEvent('Wild Dog appeared. Everyone panicked. Nothing actually happened.');
     },
   },
+
+      // === MERGE CUSTOM ITEMS INTO CATALOG ===
+ITEM_CATALOG.forEach((item) => {
+  const custom = CUSTOM_ITEM_DATA[item.key];
+  if (custom) Object.assign(item, custom);
 });
