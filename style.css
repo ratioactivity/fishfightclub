@@ -1,3 +1,10 @@
+@font-face {
+  font-family: 'Another Danger';
+  src: url('assets/Another Danger.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+}
+
 * { box-sizing: border-box; }
 html, body {
   height: 100%;
@@ -106,3 +113,20 @@ html, body {
   margin-left: auto; padding: 4px 8px; background: #1c486b; border: 1px solid #205277; color: #e7f5ff; border-radius: 6px; cursor: pointer;
 }
 .item button:hover { filter: brightness(1.1); }
+
+#flashText {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: 'Another Danger', sans-serif;
+  font-size: 120px;
+  letter-spacing: 4px;
+  color: red;
+  text-shadow: 0 0 25px black, 0 0 10px crimson;
+  opacity: 0;
+  transition: opacity 0.3s;
+  z-index: 9999;
+  pointer-events: none;
+}
+
