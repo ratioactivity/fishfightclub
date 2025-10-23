@@ -185,46 +185,75 @@ const ITEM_FILES = [
   'wilddog.png',
 ];
 
-// === ITEM CATALOG INITIALIZATION ===
-// Build a base catalog automatically from item image files.
-// Then merge in any custom behavior defined in CUSTOM_ITEM_DATA (from items.js).
+const buildDefaultItemDefinition = ({ key, file, name }) => ({
+  key,
+  file,
+  name,
+  // Default use type: Known Use (message visible on activation). Individual
+  // items can override this once their specific behavior is authored.
+  useType: 'KU',
+  messageGet: (ctx = {}) => {
+    const victor = ctx.winnerName || 'your champion';
+    return `You obtained ${name} after ${victor}'s victory!`;
+  },
+  messageUse: `${name} was used.`,
+});
 
-// 1. Base catalog (Codex-style generation)
-const ITEM_CATALOG = ITEM_FILES.map((file) => {
-  const key = file
+const buildBaseDefinitionFromFile = (fileName) => {
+  const key = fileName
     .replace(/\.png$/i, '')
     .replace(/\s+/g, '_')
     .toLowerCase();
+  const displayName = prettifyItemName(fileName);
+  return buildDefaultItemDefinition({ key, file: fileName, name: displayName });
+};
 
-  const displayName = prettifyItemName(file);
+const BASE_ITEM_DEFINITIONS = ITEM_FILES.map(buildBaseDefinitionFromFile);
 
-  return {
-    key,
-    file,
-    name: displayName,
-    // Default use type: Known Use (message visible on activation).
-    useType: 'KU',
-    messageGet: (ctx = {}) => {
-      const victor = ctx.winnerName || 'your champion';
-      return `You obtained ${displayName} after ${victor}'s victory!`;
-    },
-    messageUse: `${displayName} was used.`,
-    // Placeholder for effects until custom data merges
-    effect: ({ fish, FISH, logEvent }) => {
-      logEvent(`${displayName} has no defined effect yet.`);
-    },
-  };
-});
+function readCustomItemData() {
+  if (typeof window !== 'undefined' && window.CUSTOM_ITEM_DATA && typeof window.CUSTOM_ITEM_DATA === 'object') {
+    return window.CUSTOM_ITEM_DATA;
+  }
+  if (typeof globalThis !== 'undefined' && globalThis.CUSTOM_ITEM_DATA && typeof globalThis.CUSTOM_ITEM_DATA === 'object') {
+    return globalThis.CUSTOM_ITEM_DATA;
+  }
+  if (typeof CUSTOM_ITEM_DATA !== 'undefined') {
+    return CUSTOM_ITEM_DATA;
+  }
+  return {};
+}
+
+function mergeDefinition(base, overrides) {
+  if (!overrides) return { ...base };
+  const merged = { ...base };
+  for (const [prop, value] of Object.entries(overrides)) {
+    if (value !== undefined) {
+      merged[prop] = value;
+    }
+  }
+  return merged;
+}
+
+function createDefaultDefinitionForKey(key, overrides = {}) {
+  const file = overrides.file || `${key}.png`;
+  const name = overrides.name || prettifyItemName(file);
+  const base = buildDefaultItemDefinition({ key, file, name });
+  return mergeDefinition(base, overrides);
+}
+
+function buildItemCatalog() {
+  const customData = readCustomItemData() || {};
+  const catalog = BASE_ITEM_DEFINITIONS.map((base) => mergeDefinition(base, customData[base.key]));
+
+  for (const [key, overrides] of Object.entries(customData)) {
+    if (catalog.some((entry) => entry.key === key)) continue;
+    catalog.push(createDefaultDefinitionForKey(key, overrides));
+  }
+
+  return catalog;
+}
 
 let ITEM_ID_SEQ = 1;
-
-// 2. Merge custom definitions if available
-if (typeof CUSTOM_ITEM_DATA !== 'undefined') {
-  ITEM_CATALOG.forEach((item) => {
-    const custom = CUSTOM_ITEM_DATA[item.key];
-    if (custom) Object.assign(item, custom);
-  });
-}
 
 // ======= UTILS =======
 const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
@@ -256,6 +285,7 @@ function createItemInstance(definition, context = {}) {
     useType: definition.useType || 'KU',
     definition,
     state: 'idle',
+    context,
     messageGet: typeof definition.messageGet === 'function'
       ? definition.messageGet(context)
       : (definition.messageGet || `You obtained ${definition.name}.`),
@@ -265,6 +295,103 @@ function createItemInstance(definition, context = {}) {
   };
   return item;
 }
+
+function updateInventoryTooltip(item) {
+  const el = item.itemEl || item.el;
+  if (!el) return;
+  const detailText = item.definition && item.definition.description
+    ? item.definition.description
+    : item.messageUse;
+  const tooltipLines = [item.name];
+  if (detailText) tooltipLines.push(detailText);
+  tooltipLines.push(`Use Type: ${item.useType}`);
+  el.title = tooltipLines.filter(Boolean).join('\n');
+}
+
+function applyDefinitionToItem(item, definition) {
+  item.definition = definition;
+  item.name = definition.name || item.name;
+  item.useType = definition.useType || item.useType || 'KU';
+
+  if (definition.file) {
+    item.icon = `${ITEM_ASSET_PATH}/${encodeURIComponent(definition.file)}`;
+    if (item.iconEl) {
+      item.iconEl.style.backgroundImage = `url("${item.icon}")`;
+    }
+  }
+
+  const context = item.context || {};
+  item.messageUse = typeof definition.messageUse === 'function'
+    ? definition.messageUse(context)
+    : (definition.messageUse || `${item.name} was used.`);
+
+  if (item.labelEl && item.name) {
+    item.labelEl.textContent = item.name;
+  }
+
+  updateInventoryTooltip(item);
+}
+
+function hydrateItemFromCatalog(item, catalog = null) {
+  const sourceCatalog = catalog || buildItemCatalog();
+  const definition = sourceCatalog.find((entry) => entry.key === item.key);
+  if (!definition) return;
+  applyDefinitionToItem(item, definition);
+}
+
+function refreshInventoryDefinitions(existingCatalog = null) {
+  if (!INVENTORY.length) return;
+  const catalog = existingCatalog || buildItemCatalog();
+  for (const item of INVENTORY) {
+    hydrateItemFromCatalog(item, catalog);
+  }
+}
+
+function installCustomItemDataObserver() {
+  if (typeof window === 'undefined') return;
+
+  const installPollingFallback = () => {
+    let lastRef = readCustomItemData();
+    setInterval(() => {
+      const latest = readCustomItemData();
+      if (latest !== lastRef) {
+        lastRef = latest;
+        refreshInventoryDefinitions();
+      }
+    }, 1200);
+  };
+
+  const descriptor = Object.getOwnPropertyDescriptor(window, 'CUSTOM_ITEM_DATA');
+  if (!descriptor || descriptor.configurable) {
+    let current = readCustomItemData();
+    try {
+      Object.defineProperty(window, 'CUSTOM_ITEM_DATA', {
+        configurable: true,
+        enumerable: true,
+        get() {
+          return current;
+        },
+        set(value) {
+          current = (value && typeof value === 'object') ? value : {};
+          refreshInventoryDefinitions();
+        },
+      });
+      if (descriptor && descriptor.set) {
+        descriptor.set.call(window, current);
+      }
+      if (current && typeof current === 'object') {
+        refreshInventoryDefinitions();
+      }
+    } catch (err) {
+      console.warn('Falling back to polling for CUSTOM_ITEM_DATA updates.', err);
+      installPollingFallback();
+    }
+  } else {
+    installPollingFallback();
+  }
+}
+
+installCustomItemDataObserver();
 
 /**
  * Refresh the inventory button label/count and optionally pulse it when new
@@ -327,6 +454,11 @@ function addToInventory(item) {
 
   DOM.inventoryList.appendChild(entry);
   item.el = entry;
+  item.itemEl = entry;
+  item.iconEl = icon;
+  item.labelEl = label;
+
+  hydrateItemFromCatalog(item);
 
   if (item.messageGet) logEvent(item.messageGet);
   updateInventoryUIState({ highlightNew: true });
@@ -337,8 +469,9 @@ function addToInventory(item) {
  */
 function removeItemFromInventory(item) {
   INVENTORY = INVENTORY.filter((entry) => entry.id !== item.id);
-  if (item.el && item.el.parentNode) {
-    item.el.parentNode.removeChild(item.el);
+  const el = item.itemEl || item.el;
+  if (el && el.parentNode) {
+    el.parentNode.removeChild(el);
   }
   updateInventoryUIState();
 }
@@ -350,8 +483,9 @@ function removeItemFromInventory(item) {
 function cancelPendingItem() {
   if (!pendingSavedItem) return;
   pendingSavedItem.state = 'idle';
-  if (pendingSavedItem.el) {
-    pendingSavedItem.el.classList.remove('inventory-item--pending');
+  const el = pendingSavedItem.itemEl || pendingSavedItem.el;
+  if (el) {
+    el.classList.remove('inventory-item--pending');
   }
   pendingSavedItem = null;
 }
@@ -365,6 +499,8 @@ function useItem(itemRef) {
     ? itemRef
     : INVENTORY.find((entry) => entry.id === itemRef);
   if (!item) return;
+
+  hydrateItemFromCatalog(item);
 
   // Ensure only one Save-For-Later item is staged at a time.
   if (pendingSavedItem && pendingSavedItem.id !== item.id) {
@@ -381,8 +517,9 @@ function useItem(itemRef) {
       }
       pendingSavedItem = item;
       item.state = 'awaiting-target';
-      if (item.el) {
-        item.el.classList.add('inventory-item--pending');
+      const el = item.itemEl || item.el;
+      if (el) {
+        el.classList.add('inventory-item--pending');
       }
       logEvent(`${item.name} will apply to the next fish you click.`);
       break;
@@ -416,8 +553,9 @@ function finalizeItemUse(item, { showMessage = true, targetFish = null } = {}) {
   if (pendingSavedItem && pendingSavedItem.id === item.id) {
     pendingSavedItem = null;
   }
-  if (item.el) {
-    item.el.classList.remove('inventory-item--pending');
+  const el = item.itemEl || item.el;
+  if (el) {
+    el.classList.remove('inventory-item--pending');
   }
   removeItemFromInventory(item);
 
@@ -449,10 +587,12 @@ function applyItemEffect(item, fish) {
  * Roll a random item reward and drop it straight into the player's inventory.
  */
 function awardRandomItemForVictory(winner) {
-  if (!ITEM_CATALOG.length) return;
-  const definition = randChoice(ITEM_CATALOG);
+  const catalog = buildItemCatalog();
+  if (!catalog.length) return;
+  const definition = randChoice(catalog);
   const item = createItemInstance(definition, { winnerName: winner.name });
   addToInventory(item);
+  refreshInventoryDefinitions(catalog);
 }
 
 function emoteAt(x, y, key) {
