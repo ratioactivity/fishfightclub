@@ -427,6 +427,81 @@ function tick(ts) {
   requestAnimationFrame(tick);
 }
 
+function randomEncounter() {
+  if (FISH.length < 2) return;
+
+  // pick two random distinct fish
+  const a = FISH[Math.floor(Math.random() * FISH.length)];
+  let b;
+  do { b = FISH[Math.floor(Math.random() * FISH.length)]; } while (b === a);
+
+  // roll chance (only 10% chance of encounter)
+  if (Math.random() > 0.1) return;
+
+  // 10% fight, 10% breed, 80% nothing
+  const roll = Math.random();
+  if (roll < 0.1) {
+    startFight(a, b, false);
+  } else if (roll < 0.2) {
+    startBreed(a, b, false);
+  } else {
+    logEvent(`${a.name} bumped into ${b.name}. Nothing happened.`);
+    spawnEmote(a, "fail");
+    spawnEmote(b, "fail");
+  }
+}
+setInterval(randomEncounter, 60000); // every 60s for now, we can later make this 1hr for realism
+
+function startFight(a, b, instigated) {
+  const aPower = a.power || 0;
+  const bPower = b.power || 0;
+
+  const winner = aPower >= bPower ? a : b;
+  const loser = winner === a ? b : a;
+
+  logEvent(`${winner.name} defeated ${loser.name} in a fight!`);
+  spawnEmote(winner, "fight");
+  spawnEmote(loser, "cry");
+
+  // 50% chance of death
+  if (Math.random() < 0.5) {
+    killFish(loser);
+    spawnEmote(loser, "death");
+  } else {
+    loser.injured = true;
+    loser.injuredUntil = Date.now() + 3600000; // 1 hour cooldown
+  }
+
+  if (instigated) {
+    const reward = getRandomItem();
+    addToInventory(reward);
+  }
+}
+
+function startBreed(a, b, instigated) {
+  logEvent(`${a.name} and ${b.name} are feeling flirty...`);
+  spawnEmote(a, "love");
+  spawnEmote(b, "love");
+
+  if (Math.random() < 0.25) {
+    spawnBabyFish(a, b);
+  } else {
+    spawnEmote(a, "cry");
+    spawnEmote(b, "cry");
+    logEvent(`...but nothing happened.`);
+  }
+}
+
+function spawnBabyFish(a, b) {
+  const baby = createFish({
+    size: 0.75,
+  });
+  baby.sizeGrowthStart = Date.now();
+  baby.sizeGrowthRate = 1 / (24 * 60 * 60 * 1000); // grows to full in 1 day
+  logEvent(`A baby fish was born! Welcome ${baby.name}!`);
+  spawnEmote(baby, "newfish");
+}
+
 function rectsOverlap(aEl, bEl) {
   const ra = aEl.getBoundingClientRect();
   const rb = bEl.getBoundingClientRect();
