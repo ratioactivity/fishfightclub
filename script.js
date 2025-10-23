@@ -185,46 +185,78 @@ const ITEM_FILES = [
   'wilddog.png',
 ];
 
-// === ITEM CATALOG INITIALIZATION ===
-// Build a base catalog automatically from item image files.
-// Then merge in any custom behavior defined in CUSTOM_ITEM_DATA (from items.js).
+// Derive a catalog with sensible defaults. Specific effects/messages can be
+// filled in later by extending the entries returned here.
+const CUSTOM_ITEM_DATA = (() => {
+  if (typeof window !== 'undefined') {
+    window.CUSTOM_ITEM_DATA = window.CUSTOM_ITEM_DATA || {};
+    return window.CUSTOM_ITEM_DATA;
+  }
+  return {};
+})();
 
-// 1. Base catalog (Codex-style generation)
-const ITEM_CATALOG = ITEM_FILES.map((file) => {
-  const key = file
-    .replace(/\.png$/i, '')
-    .replace(/\s+/g, '_')
-    .toLowerCase();
+const ITEM_CATALOG = (() => {
+  const catalog = ITEM_FILES.map((file) => {
+    const key = file
+      .replace(/\.png$/i, '')
+      .replace(/\s+/g, '_')
+      .toLowerCase();
+    const displayName = prettifyItemName(file);
+    return {
+      key,
+      file,
+      name: displayName,
+      // Default use type: Known Use (message visible on activation). Individual
+      // items can override this once their specific behavior is authored.
+      useType: 'KU',
+      messageGet: (ctx = {}) => {
+        const victor = ctx.winnerName || 'your champion';
+        return `You obtained ${displayName} after ${victor}'s victory!`;
+      },
+      messageUse: `${displayName} was used.`,
+    };
+  });
 
-  const displayName = prettifyItemName(file);
+  // Merge any custom overrides into the base catalog so bespoke effects apply.
+  for (const item of catalog) {
+    const overrides = CUSTOM_ITEM_DATA[item.key];
+    if (!overrides) continue;
+    for (const [prop, value] of Object.entries(overrides)) {
+      if (value !== undefined) {
+        item[prop] = value;
+      }
+    }
+  }
 
-  return {
-    key,
-    file,
-    name: displayName,
-    // Default use type: Known Use (message visible on activation).
-    useType: 'KU',
-    messageGet: (ctx = {}) => {
+  // If custom data introduces entirely new items, add them to the catalog too.
+  for (const [key, overrides] of Object.entries(CUSTOM_ITEM_DATA)) {
+    if (catalog.some((entry) => entry.key === key)) continue;
+    const file = overrides.file || `${key}.png`;
+    const name = overrides.name || prettifyItemName(file);
+    const fallbackGet = (ctx = {}) => {
       const victor = ctx.winnerName || 'your champion';
-      return `You obtained ${displayName} after ${victor}'s victory!`;
-    },
-    messageUse: `${displayName} was used.`,
-    // Placeholder for effects until custom data merges
-    effect: ({ fish, FISH, logEvent }) => {
-      logEvent(`${displayName} has no defined effect yet.`);
-    },
-  };
-});
+      return `You obtained ${name} after ${victor}'s victory!`;
+    };
+    const entry = {
+      key,
+      file,
+      name,
+      useType: overrides.useType || 'KU',
+      messageGet: overrides.messageGet || fallbackGet,
+      messageUse: overrides.messageUse || `${name} was used.`,
+    };
+    for (const [prop, value] of Object.entries(overrides)) {
+      if (value !== undefined) {
+        entry[prop] = value;
+      }
+    }
+    catalog.push(entry);
+  }
+
+  return catalog;
+})();
 
 let ITEM_ID_SEQ = 1;
-
-// 2. Merge custom definitions if available
-if (typeof CUSTOM_ITEM_DATA !== 'undefined') {
-  ITEM_CATALOG.forEach((item) => {
-    const custom = CUSTOM_ITEM_DATA[item.key];
-    if (custom) Object.assign(item, custom);
-  });
-}
 
 // ======= UTILS =======
 const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
@@ -320,6 +352,14 @@ function addToInventory(item) {
   label.className = 'inventory-item__name';
   label.textContent = item.name;
 
+  const detailText = item.definition && item.definition.description
+    ? item.definition.description
+    : item.messageUse;
+  const tooltipLines = [item.name];
+  if (detailText) tooltipLines.push(detailText);
+  tooltipLines.push(`Use Type: ${item.useType}`);
+  entry.title = tooltipLines.filter(Boolean).join('\n');
+
   entry.appendChild(icon);
   entry.appendChild(label);
 
@@ -327,6 +367,7 @@ function addToInventory(item) {
 
   DOM.inventoryList.appendChild(entry);
   item.el = entry;
+  item.itemEl = entry;
 
   if (item.messageGet) logEvent(item.messageGet);
   updateInventoryUIState({ highlightNew: true });
@@ -337,8 +378,9 @@ function addToInventory(item) {
  */
 function removeItemFromInventory(item) {
   INVENTORY = INVENTORY.filter((entry) => entry.id !== item.id);
-  if (item.el && item.el.parentNode) {
-    item.el.parentNode.removeChild(item.el);
+  const el = item.itemEl || item.el;
+  if (el && el.parentNode) {
+    el.parentNode.removeChild(el);
   }
   updateInventoryUIState();
 }
@@ -350,8 +392,9 @@ function removeItemFromInventory(item) {
 function cancelPendingItem() {
   if (!pendingSavedItem) return;
   pendingSavedItem.state = 'idle';
-  if (pendingSavedItem.el) {
-    pendingSavedItem.el.classList.remove('inventory-item--pending');
+  const el = pendingSavedItem.itemEl || pendingSavedItem.el;
+  if (el) {
+    el.classList.remove('inventory-item--pending');
   }
   pendingSavedItem = null;
 }
@@ -381,8 +424,9 @@ function useItem(itemRef) {
       }
       pendingSavedItem = item;
       item.state = 'awaiting-target';
-      if (item.el) {
-        item.el.classList.add('inventory-item--pending');
+      const el = item.itemEl || item.el;
+      if (el) {
+        el.classList.add('inventory-item--pending');
       }
       logEvent(`${item.name} will apply to the next fish you click.`);
       break;
@@ -416,8 +460,9 @@ function finalizeItemUse(item, { showMessage = true, targetFish = null } = {}) {
   if (pendingSavedItem && pendingSavedItem.id === item.id) {
     pendingSavedItem = null;
   }
-  if (item.el) {
-    item.el.classList.remove('inventory-item--pending');
+  const el = item.itemEl || item.el;
+  if (el) {
+    el.classList.remove('inventory-item--pending');
   }
   removeItemFromInventory(item);
 
