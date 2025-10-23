@@ -311,6 +311,12 @@ function killFish(fish, silent=false) {
   removeFish(fish);
   emoteAtLastPos(fish, 'death');
   if (!silent) logEvent(`${fish.name} has died.`);
+  f.el.style.filter = "brightness(5) saturate(0)";
+f.el.style.transition = "filter 0.3s ease";
+setTimeout(() => {
+  f.el.style.opacity = 0;
+  setTimeout(() => f.el.remove(), 300);
+}, 300);
 }
 
 function emoteAtCenterOf(fish, key) {
