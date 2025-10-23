@@ -130,6 +130,7 @@ let INVENTORY = [];
 let selection = [];
 let lastTick = performance.now();
 let pendingSavedItem = null;
+let inventoryPulseTimeout = null; // debounce handle for the inventory pulse animation
 
 // ======= ITEMS / INVENTORY CONFIG =======
 const ITEM_ASSET_PATH = 'assets/items';
@@ -248,6 +249,34 @@ function createItemInstance(definition, context = {}) {
 }
 
 /**
+ * Refresh the inventory button label/count and optionally pulse it when new
+ * loot drops so players notice immediately.
+ */
+function updateInventoryUIState({ highlightNew = false } = {}) {
+  if (!DOM.toggleInventory) return;
+
+  const count = INVENTORY.length;
+  DOM.toggleInventory.textContent = count > 0
+    ? `Inventory (${count})`
+    : 'Inventory';
+
+  if (count > 0) {
+    DOM.toggleInventory.classList.add('has-items');
+  } else {
+    DOM.toggleInventory.classList.remove('has-items');
+  }
+
+  if (highlightNew) {
+    DOM.toggleInventory.classList.add('inventory-button--pulse');
+    if (inventoryPulseTimeout) clearTimeout(inventoryPulseTimeout);
+    inventoryPulseTimeout = setTimeout(() => {
+      DOM.toggleInventory.classList.remove('inventory-button--pulse');
+      inventoryPulseTimeout = null;
+    }, 1600);
+  }
+}
+
+/**
  * Add an item to the inventory state + DOM, wiring up the click handler that
  * funnels into useItem().
  */
@@ -256,6 +285,7 @@ function addToInventory(item) {
 
   if (!DOM.inventoryList) {
     if (item.messageGet) logEvent(item.messageGet);
+    updateInventoryUIState({ highlightNew: true });
     return;
   }
 
@@ -263,30 +293,14 @@ function addToInventory(item) {
   entry.type = 'button';
   entry.className = 'inventory-item';
   entry.dataset.itemId = item.id;
-  entry.style.display = 'flex';
-  entry.style.alignItems = 'center';
-  entry.style.width = '100%';
-  entry.style.margin = '4px 0';
-  entry.style.padding = '4px 8px';
-  entry.style.background = 'rgba(0, 0, 0, 0.25)';
-  entry.style.border = '1px solid rgba(255, 255, 255, 0.2)';
-  entry.style.color = '#fff';
-  entry.style.cursor = 'pointer';
 
   const icon = document.createElement('span');
   icon.className = 'inventory-item__icon';
   icon.style.backgroundImage = `url("${item.icon}")`;
-  icon.style.width = '40px';
-  icon.style.height = '40px';
-  icon.style.display = 'inline-block';
-  icon.style.backgroundSize = 'contain';
-  icon.style.backgroundRepeat = 'no-repeat';
-  icon.style.backgroundPosition = 'center';
 
   const label = document.createElement('span');
   label.className = 'inventory-item__name';
   label.textContent = item.name;
-  label.style.marginLeft = '8px';
 
   entry.appendChild(icon);
   entry.appendChild(label);
@@ -297,6 +311,7 @@ function addToInventory(item) {
   item.el = entry;
 
   if (item.messageGet) logEvent(item.messageGet);
+  updateInventoryUIState({ highlightNew: true });
 }
 
 /**
@@ -307,6 +322,7 @@ function removeItemFromInventory(item) {
   if (item.el && item.el.parentNode) {
     item.el.parentNode.removeChild(item.el);
   }
+  updateInventoryUIState();
 }
 
 /**
@@ -318,7 +334,6 @@ function cancelPendingItem() {
   pendingSavedItem.state = 'idle';
   if (pendingSavedItem.el) {
     pendingSavedItem.el.classList.remove('inventory-item--pending');
-    pendingSavedItem.el.style.outline = '';
   }
   pendingSavedItem = null;
 }
@@ -350,7 +365,6 @@ function useItem(itemRef) {
       item.state = 'awaiting-target';
       if (item.el) {
         item.el.classList.add('inventory-item--pending');
-        item.el.style.outline = '2px solid gold';
       }
       logEvent(`${item.name} will apply to the next fish you click.`);
       break;
@@ -386,7 +400,6 @@ function finalizeItemUse(item, { showMessage = true, targetFish = null } = {}) {
   }
   if (item.el) {
     item.el.classList.remove('inventory-item--pending');
-    item.el.style.outline = '';
   }
   removeItemFromInventory(item);
 
@@ -791,7 +804,14 @@ function boot() {
   });
   DOM.toggleInventory.addEventListener('click', () => {
     DOM.inventoryPanel.classList.toggle('hidden');
+    if (inventoryPulseTimeout) {
+      clearTimeout(inventoryPulseTimeout);
+      inventoryPulseTimeout = null;
+    }
+    DOM.toggleInventory.classList.remove('inventory-button--pulse');
   });
+
+  updateInventoryUIState();
 
   for (let i = 0; i < INITIAL_FISH; i++) createFish();
 
