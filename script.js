@@ -137,6 +137,7 @@ function logEvent(text) {
 function emoteAt(x, y, key) {
   const node = document.createElement('div');
   node.className = 'emote';
+  node.classList.add(`emote--${key}`);
   node.style.backgroundImage = `url("assets/emotes/${key}.gif")`;
   node.style.left = `${x}px`;
   node.style.top  = `${y}px`;

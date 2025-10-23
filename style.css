@@ -71,7 +71,7 @@ html, body {
 
 .emote {
   position: absolute;
-  width: 96px;   /* try 96px if you want HUGE */
+  width: 96px;
   height: 96px;
   background-size: contain;
   background-repeat: no-repeat;
@@ -80,6 +80,18 @@ html, body {
   transition: opacity 160ms ease, transform 220ms ease;
   pointer-events: none;
   z-index: 50;
+}
+
+.emote.emote--bubble,
+.emote.emote--fail,
+.emote.emote--love {
+  width: 74px;
+  height: 74px;
+}
+
+.emote.emote--fight {
+  width: 112px;
+  height: 112px;
 }
 
 .panel.hidden { display: none; }
@@ -113,8 +125,12 @@ html, body {
 .item button:hover { filter: brightness(1.1); }
 
 @font-face {
-  font-family: 'Another Danger' !important;
-  src: url('fonts/Another Danger.otf') format('opentype');
+  font-family: 'Another Danger';
+  src: url('assets/fonts/Another%20Danger.otf') format('opentype'),
+       url('assets/fonts/Another-Danger.otf') format('opentype'),
+       url('fonts/Another%20Danger.otf') format('opentype'),
+       url('fonts/Another-Danger.otf') format('opentype');
+  font-display: swap;
 }
 
 #flashText {
