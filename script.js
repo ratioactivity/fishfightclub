@@ -1,6 +1,6 @@
 // ======= CONFIG =======
-const MAX_FISH = 10;
-const INITIAL_FISH = 4;
+const MAX_FISH = 20;
+const INITIAL_FISH = 6;
 const ARENA = { w: 0, h: 0 };
 
 const NAME_POOL = [
