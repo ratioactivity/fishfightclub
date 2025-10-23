@@ -65,6 +65,8 @@ html, body {
   cursor: crosshair;
   filter: saturate(1.25) drop-shadow(0 4px 8px rgba(0,0,0,0.35));
   transition: transform 0.15s ease-out;
+  will-change: transform, background-image;
+  backface-visibility: hidden;
 }
 
 .emote {
