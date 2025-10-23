@@ -112,9 +112,7 @@ html, body {
 
 @font-face {
   font-family: 'Another Danger';
-  src: url('assets/Another Danger.otf') format('opentype');
-  font-weight: normal;
-  font-style: normal;
+  src: url('assets/fonts/Another Danger.otf') format('opentype');
 }
 
 #flashText {
