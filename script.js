@@ -112,6 +112,7 @@ const DOM = {
   toggleInventory: document.getElementById('toggle-inventory'),
   eventsPanel: document.getElementById('events-panel'),
   inventoryPanel: document.getElementById('inventory-panel'),
+  inventoryList: document.getElementById('inventory'),
   fishCount: document.getElementById('fish-count'),
 };
 
@@ -119,6 +120,132 @@ let FISH = [];
 let INVENTORY = [];
 let selection = [];
 let lastTick = performance.now();
+let pendingSavedItem = null;
+let inventoryPulseTimeout = null; // debounce handle for the inventory pulse animation
+
+// ======= ITEMS / INVENTORY CONFIG =======
+const ITEM_ASSET_PATH = 'assets/items';
+
+// Helper: format readable names from filenames ("foo_bar" → "Foo Bar").
+const prettifyItemName = (fileName) => {
+  const base = fileName.replace(/\.png$/i, '').replace(/[_-]+/g, ' ');
+  return base.replace(/\b([a-z])/g, (m, ch) => ch.toUpperCase());
+};
+
+// Full catalog of available item asset files.
+const ITEM_FILES = [
+  'American_cheese.png',
+  'angler.png',
+  'bacon.png',
+  'barbeque_sauce.png',
+  'batteries.png',
+  'bell_pepper.png',
+  'body_lotion.png',
+  'bubble_gum.png',
+  'butter.png',
+  'cabbage.png',
+  'candy_bar.png',
+  'cereal.png',
+  'coffee_bag.png',
+  'cookies.png',
+  'credit_card.png',
+  'detergent.png',
+  'egg.png',
+  'eraser.png',
+  'frying pan.png',
+  'glue.png',
+  'hyena.png',
+  'jam.png',
+  'ketchup.png',
+  'light_bulb.png',
+  'marshmallows.png',
+  'meat.png',
+  'meerkat.png',
+  'mustard.png',
+  'orca.png',
+  'potatochip.png',
+  'rubber_duck.png',
+  'salmon.png',
+  'soap.png',
+  'spatula.png',
+  'water.png',
+  'wet_wipe.png',
+  'white_cheese.png',
+  'wilddog.png',
+];
+
+// Derive a catalog with sensible defaults. Specific effects/messages can be
+// filled in later by extending the entries returned here.
+const CUSTOM_ITEM_DATA = (() => {
+  if (typeof window !== 'undefined') {
+    window.CUSTOM_ITEM_DATA = window.CUSTOM_ITEM_DATA || {};
+    return window.CUSTOM_ITEM_DATA;
+  }
+  return {};
+})();
+
+const ITEM_CATALOG = (() => {
+  const catalog = ITEM_FILES.map((file) => {
+    const key = file
+      .replace(/\.png$/i, '')
+      .replace(/\s+/g, '_')
+      .toLowerCase();
+    const displayName = prettifyItemName(file);
+    return {
+      key,
+      file,
+      name: displayName,
+      // Default use type: Known Use (message visible on activation). Individual
+      // items can override this once their specific behavior is authored.
+      useType: 'KU',
+      messageGet: (ctx = {}) => {
+        const victor = ctx.winnerName || 'your champion';
+        return `You obtained ${displayName} after ${victor}'s victory!`;
+      },
+      messageUse: `${displayName} was used.`,
+    };
+  });
+
+  // Merge any custom overrides into the base catalog so bespoke effects apply.
+  for (const item of catalog) {
+    const overrides = CUSTOM_ITEM_DATA[item.key];
+    if (!overrides) continue;
+    for (const [prop, value] of Object.entries(overrides)) {
+      if (value !== undefined) {
+        item[prop] = value;
+      }
+    }
+  }
+
+  // If custom data introduces entirely new items, add them to the catalog too.
+  for (const [key, overrides] of Object.entries(CUSTOM_ITEM_DATA)) {
+    if (catalog.some((entry) => entry.key === key)) continue;
+    const file = overrides.file || `${key}.png`;
+    const name = overrides.name || prettifyItemName(file);
+    const fallbackGet = (ctx = {}) => {
+      const victor = ctx.winnerName || 'your champion';
+      return `You obtained ${name} after ${victor}'s victory!`;
+    };
+    const entry = {
+      key,
+      file,
+      name,
+      useType: overrides.useType || 'KU',
+      messageGet: overrides.messageGet || fallbackGet,
+      messageUse: overrides.messageUse || `${name} was used.`,
+    };
+    for (const [prop, value] of Object.entries(overrides)) {
+      if (value !== undefined) {
+        entry[prop] = value;
+      }
+    }
+    catalog.push(entry);
+  }
+
+  return catalog;
+})();
+
+let ITEM_ID_SEQ = 1;
 
 // ======= UTILS =======
 const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
@@ -134,9 +261,238 @@ function logEvent(text) {
   DOM.events.scrollTop = DOM.events.scrollHeight;
 }
 
+// ======= INVENTORY HELPERS =======
+
+/**
+ * Generate a runtime item instance from a catalog entry. Future phases can add
+ * richer data (effects, custom messaging) by extending the definition object.
+ */
+function createItemInstance(definition, context = {}) {
+  const iconPath = `${ITEM_ASSET_PATH}/${encodeURIComponent(definition.file)}`;
+  const item = {
+    id: ITEM_ID_SEQ++,
+    key: definition.key,
+    name: definition.name,
+    icon: iconPath,
+    useType: definition.useType || 'KU',
+    definition,
+    state: 'idle',
+    messageGet: typeof definition.messageGet === 'function'
+      ? definition.messageGet(context)
+      : (definition.messageGet || `You obtained ${definition.name}.`),
+    messageUse: typeof definition.messageUse === 'function'
+      ? definition.messageUse(context)
+      : (definition.messageUse || `${definition.name} was used.`),
+  };
+  return item;
+}
+
+/**
+ * Refresh the inventory button label/count and optionally pulse it when new
+ * loot drops so players notice immediately.
+ */
+function updateInventoryUIState({ highlightNew = false } = {}) {
+  if (!DOM.toggleInventory) return;
+
+  const count = INVENTORY.length;
+  DOM.toggleInventory.textContent = count > 0
+    ? `Inventory (${count})`
+    : 'Inventory';
+
+  if (count > 0) {
+    DOM.toggleInventory.classList.add('has-items');
+  } else {
+    DOM.toggleInventory.classList.remove('has-items');
+  }
+
+  if (highlightNew) {
+    DOM.toggleInventory.classList.add('inventory-button--pulse');
+    if (inventoryPulseTimeout) clearTimeout(inventoryPulseTimeout);
+    inventoryPulseTimeout = setTimeout(() => {
+      DOM.toggleInventory.classList.remove('inventory-button--pulse');
+      inventoryPulseTimeout = null;
+    }, 1600);
+  }
+}
+
+/**
+ * Add an item to the inventory state + DOM, wiring up the click handler that
+ * funnels into useItem().
+ */
+function addToInventory(item) {
+  INVENTORY.push(item);
+
+  if (!DOM.inventoryList) {
+    if (item.messageGet) logEvent(item.messageGet);
+    updateInventoryUIState({ highlightNew: true });
+    return;
+  }
+
+  const entry = document.createElement('button');
+  entry.type = 'button';
+  entry.className = 'inventory-item';
+  entry.dataset.itemId = item.id;
+
+  const icon = document.createElement('span');
+  icon.className = 'inventory-item__icon';
+  icon.style.backgroundImage = `url("${item.icon}")`;
+
+  const label = document.createElement('span');
+  label.className = 'inventory-item__name';
+  label.textContent = item.name;
+
+  const detailText = item.definition && item.definition.description
+    ? item.definition.description
+    : item.messageUse;
+  const tooltipLines = [item.name];
+  if (detailText) tooltipLines.push(detailText);
+  tooltipLines.push(`Use Type: ${item.useType}`);
+  entry.title = tooltipLines.filter(Boolean).join('\n');
+
+  entry.appendChild(icon);
+  entry.appendChild(label);
+
+  entry.addEventListener('click', () => useItem(item.id));
+
+  DOM.inventoryList.appendChild(entry);
+  item.el = entry;
+  item.itemEl = entry;
+
+  if (item.messageGet) logEvent(item.messageGet);
+  updateInventoryUIState({ highlightNew: true });
+}
+
+/**
+ * Remove an item from inventory arrays/DOM.
+ */
+function removeItemFromInventory(item) {
+  INVENTORY = INVENTORY.filter((entry) => entry.id !== item.id);
+  const el = item.itemEl || item.el;
+  if (el && el.parentNode) {
+    el.parentNode.removeChild(el);
+  }
+  updateInventoryUIState();
+}
+
+/**
+ * When a Save-For-Later item is primed but a different one is chosen, tidy up
+ * the previous selection so the UI state stays accurate.
+ */
+function cancelPendingItem() {
+  if (!pendingSavedItem) return;
+  pendingSavedItem.state = 'idle';
+  const el = pendingSavedItem.itemEl || pendingSavedItem.el;
+  if (el) {
+    el.classList.remove('inventory-item--pending');
+  }
+  pendingSavedItem = null;
+}
+
+/**
+ * Core dispatcher: invoked when an inventory item is clicked. Handles each
+ * supported item use type (IU/SFL/SU/HU/KU).
+ */
+function useItem(itemRef) {
+  const item = typeof itemRef === 'object'
+    ? itemRef
+    : INVENTORY.find((entry) => entry.id === itemRef);
+  if (!item) return;
+
+  // Ensure only one Save-For-Later item is staged at a time.
+  if (pendingSavedItem && pendingSavedItem.id !== item.id) {
+    cancelPendingItem();
+  }
+
+  switch ((item.useType || 'KU').toUpperCase()) {
+    case 'SFL': {
+      if (item.state === 'awaiting-target') {
+        // Clicking again cancels the readied state.
+        cancelPendingItem();
+        logEvent(`${item.name} is no longer readied.`);
+        return;
+      }
+      pendingSavedItem = item;
+      item.state = 'awaiting-target';
+      const el = item.itemEl || item.el;
+      if (el) {
+        el.classList.add('inventory-item--pending');
+      }
+      logEvent(`${item.name} will apply to the next fish you click.`);
+      break;
+    }
+    case 'IU':
+    case 'HU':
+    case 'KU': {
+      applyItemEffect(item, null);
+      finalizeItemUse(item, { showMessage: true, targetFish: null });
+      break;
+    }
+    case 'SU': {
+      applyItemEffect(item, null);
+      finalizeItemUse(item, { showMessage: false, targetFish: null });
+      break;
+    }
+    default: {
+      // Unknown types fall back to a known-use behavior so the item isn't
+      // stranded. This can be tightened once all items have proper metadata.
+      applyItemEffect(item, null);
+      finalizeItemUse(item, { showMessage: true, targetFish: null });
+    }
+  }
+}
+
+/**
+ * Wrap up item usage: clear DOM, optionally show its message, and forget any
+ * staged Save-For-Later reference.
+ */
+function finalizeItemUse(item, { showMessage = true, targetFish = null } = {}) {
+  if (pendingSavedItem && pendingSavedItem.id === item.id) {
+    pendingSavedItem = null;
+  }
+  const el = item.itemEl || item.el;
+  if (el) {
+    el.classList.remove('inventory-item--pending');
+  }
+  removeItemFromInventory(item);
+
+  if (showMessage && item.messageUse) {
+    const message = typeof item.messageUse === 'function'
+      ? item.messageUse({ item, fish: targetFish })
+      : item.messageUse;
+    logEvent(message);
+  }
+}
+
+/**
+ * Execute the item's gameplay effect. The actual stat adjustments will be
+ * defined later; for now we call into an optional effect function so Phase 4
+ * can slot in seamlessly when details arrive.
+ */
+function applyItemEffect(item, fish) {
+  if (item.definition && typeof item.definition.effect === 'function') {
+    try {
+      item.definition.effect({ item, fish, FISH, logEvent });
+    } catch (err) {
+      console.error('Error applying item effect', err);
+      logEvent(`Something went wrong while using ${item.name}.`);
+    }
+  }
+}
+
+/**
+ * Roll a random item reward and drop it straight into the player's inventory.
+ */
+function awardRandomItemForVictory(winner) {
+  if (!ITEM_CATALOG.length) return;
+  const definition = randChoice(ITEM_CATALOG);
+  const item = createItemInstance(definition, { winnerName: winner.name });
+  addToInventory(item);
+}
+
 function emoteAt(x, y, key) {
   const node = document.createElement('div');
   node.className = 'emote';
+  node.classList.add(`emote--${key}`);
   node.style.backgroundImage = `url("assets/emotes/${key}.gif")`;
   node.style.left = `${x}px`;
   node.style.top  = `${y}px`;
@@ -222,6 +578,17 @@ function removeFish(fish) {
 function onFishClick(id) {
   const f = FISH.find(x => x.id === id);
   if (!f) return;
+
+  // Consume staged Save-For-Later items instead of starting a selection.
+  if (pendingSavedItem) {
+    const item = pendingSavedItem;
+    pendingSavedItem = null;
+    item.state = 'consumed';
+    applyItemEffect(item, f);
+    finalizeItemUse(item, { showMessage: item.useType !== 'SU', targetFish: f });
+    return;
+  }
+
   selection.push(f);
   emoteAtCenterOf(f, 'bubble');
 
@@ -289,6 +656,9 @@ function handleFight(a, b) {
   setMode(loser,  'hurt',   400);
 
   logEvent(`${winner.name} fought ${loser.name} — ${winner.name} wins!`);
+
+  // Reward the player with a random item following every victorious bout.
+  awardRandomItemForVictory(winner);
 
   winner.wins = (winner.wins || 0) + 1;
   if (winner.wins >= 10) {
@@ -483,7 +853,14 @@ function boot() {
   });
   DOM.toggleInventory.addEventListener('click', () => {
     DOM.inventoryPanel.classList.toggle('hidden');
+    if (inventoryPulseTimeout) {
+      clearTimeout(inventoryPulseTimeout);
+      inventoryPulseTimeout = null;
+    }
+    DOM.toggleInventory.classList.remove('inventory-button--pulse');
   });
+
+  updateInventoryUIState();
 
   for (let i = 0; i < INITIAL_FISH; i++) createFish();
 
