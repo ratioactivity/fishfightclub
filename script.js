@@ -301,20 +301,20 @@ function updateInventoryTooltip(item) {
   const el = item.itemEl || item.el;
   if (!el) return;
 
-  // Prefer description + useInfo from the merged definition
-  const desc = item.description
-    || (item.definition && item.definition.description)
-    || 'No description.';
+  const desc =
+    item.description ||
+    (item.definition && item.definition.description) ||
+    'No description.';
 
   const effect =
     item.useType === 'KU'
-      ? (item.definition?.seInfo || item.useInfo || 'Activates automatically or on click.')
+      ? (item.definition?.useInfo || item.useInfo || 'Activates automatically or on click.')
       : '';
 
-  // Final tooltip text
+  // Final tooltip
   el.title = `${item.name}
 ${desc}
-${effect ? `Effect: ${effect}` : ''}`;
+${item.useType === 'KU' ? `Effect: ${effect}` : ''}`;
 }
 
 function applyDefinitionToItem(item, definition) {
@@ -459,13 +459,13 @@ function addToInventory(item) {
   label.className = 'inventory-item__name';
   label.textContent = item.name;
 
-  entry.appendChild(icon);
-  entry.appendChild(label);
-  entry.title = `${item.name}
-  ${item.description || 'No description.'}
-  ${item.useType === 'KU'
-    ? `Effect: ${item.useInfo || 'Activates automatically or on click.'}`
-    : ''}`;
+ entry.appendChild(icon);
+entry.appendChild(label);
+entry.title = `${item.name}
+${item.description || 'No description.'}
+${item.useType === 'KU'
+  ? `Effect: ${item.useInfo || 'Activates automatically or on click.'}`
+  : ''}`;
 
   entry.addEventListener('click', () => useItem(item.id));
 
