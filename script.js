@@ -404,6 +404,7 @@ function installCustomItemDataObserver() {
 }
 
 installCustomItemDataObserver();
+refreshInventoryDefinitions();
 
 /**
  * Refresh the inventory button label/count and optionally pulse it when new
