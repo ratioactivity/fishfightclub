@@ -112,6 +112,7 @@ const DOM = {
   toggleInventory: document.getElementById('toggle-inventory'),
   eventsPanel: document.getElementById('events-panel'),
   inventoryPanel: document.getElementById('inventory-panel'),
+  inventoryList: document.getElementById('inventory'),
   fishCount: document.getElementById('fish-count'),
 };
 
@@ -119,6 +120,129 @@ let FISH = [];
 let INVENTORY = [];
 let selection = [];
 let lastTick = performance.now();
+let pendingSavedItem = null;
+let inventoryPulseTimeout = null; // debounce handle for the inventory pulse animation
+
+// ======= ITEMS / INVENTORY CONFIG =======
+const ITEM_ASSET_PATH = 'assets/items';
+
+// Helper: format readable names from filenames ("foo_bar" → "Foo Bar").
+const prettifyItemName = (fileName) => {
+  const base = fileName.replace(/\.png$/i, '').replace(/[_-]+/g, ' ');
+  return base.replace(/\b([a-z])/g, (m, ch) => ch.toUpperCase());
+};
+
+// Full catalog of available item asset files.
+const ITEM_FILES = [
+  'American_cheese.png',
+  'angler.png',
+  'bacon.png',
+  'barbeque_sauce.png',
+  'batteries.png',
+  'bell_pepper.png',
+  'body_lotion.png',
+  'bubble_gum.png',
+  'butter.png',
+  'cabbage.png',
+  'candy_bar.png',
+  'cereal.png',
+  'coffee_bag.png',
+  'cookies.png',
+  'credit_card.png',
+  'detergent.png',
+  'egg.png',
+  'eraser.png',
+  'frying pan.png',
+  'glue.png',
+  'hyena.png',
+  'jam.png',
+  'ketchup.png',
+  'light_bulb.png',
+  'marshmallows.png',
+  'meat.png',
+  'meerkat.png',
+  'mustard.png',
+  'orca.png',
+  'potatochip.png',
+  'rubber_duck.png',
+  'salmon.png',
+  'soap.png',
+  'spatula.png',
+  'water.png',
+  'wet_wipe.png',
+  'white_cheese.png',
+  'wilddog.png',
+];
+
+const buildDefaultItemDefinition = ({ key, file, name }) => ({
+  key,
+  file,
+  name,
+  // Default use type: Known Use (message visible on activation). Individual
+  // items can override this once their specific behavior is authored.
+  useType: 'KU',
+  messageGet: (ctx = {}) => {
+    const victor = ctx.winnerName || 'your champion';
+    return `You obtained ${name} after ${victor}'s victory!`;
+  },
+  messageUse: `${name} was used.`,
+});
+
+const buildBaseDefinitionFromFile = (fileName) => {
+  const key = fileName
+    .replace(/\.png$/i, '')
+    .replace(/\s+/g, '_')
+    .toLowerCase();
+  const displayName = prettifyItemName(fileName);
+  return buildDefaultItemDefinition({ key, file: fileName, name: displayName });
+};
+
+const BASE_ITEM_DEFINITIONS = ITEM_FILES.map(buildBaseDefinitionFromFile);
+
+function readCustomItemData() {
+  if (typeof window !== 'undefined' && window.CUSTOM_ITEM_DATA && typeof window.CUSTOM_ITEM_DATA === 'object') {
+    return window.CUSTOM_ITEM_DATA;
+  }
+  if (typeof globalThis !== 'undefined' && globalThis.CUSTOM_ITEM_DATA && typeof globalThis.CUSTOM_ITEM_DATA === 'object') {
+    return globalThis.CUSTOM_ITEM_DATA;
+  }
+  if (typeof CUSTOM_ITEM_DATA !== 'undefined') {
+    return CUSTOM_ITEM_DATA;
+  }
+  return {};
+}
+
+function mergeDefinition(base, overrides) {
+  if (!overrides) return { ...base };
+  const merged = { ...base };
+  for (const [prop, value] of Object.entries(overrides)) {
+    if (value !== undefined) {
+      merged[prop] = value;
+    }
+  }
+  return merged;
+}
+
+function createDefaultDefinitionForKey(key, overrides = {}) {
+  const file = overrides.file || `${key}.png`;
+  const name = overrides.name || prettifyItemName(file);
+  const base = buildDefaultItemDefinition({ key, file, name });
+  return mergeDefinition(base, overrides);
+}
+
+function buildItemCatalog() {
+  const customData = readCustomItemData() || {};
+  const catalog = BASE_ITEM_DEFINITIONS.map((base) => mergeDefinition(base, customData[base.key]));
+
+  for (const [key, overrides] of Object.entries(customData)) {
+    if (catalog.some((entry) => entry.key === key)) continue;
+    catalog.push(createDefaultDefinitionForKey(key, overrides));
+  }
+
+  return catalog;
+}
+
+let ITEM_ID_SEQ = 1;
 
 // ======= UTILS =======
 const randInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
@@ -134,9 +258,341 @@ function logEvent(text) {
   DOM.events.scrollTop = DOM.events.scrollHeight;
 }
 
+// ======= INVENTORY HELPERS =======
+
+/**
+ * Generate a runtime item instance from a catalog entry. Future phases can add
+ * richer data (effects, custom messaging) by extending the definition object.
+ */
+function createItemInstance(definition, context = {}) {
+  const iconPath = `${ITEM_ASSET_PATH}/${encodeURIComponent(definition.file)}`;
+  const item = {
+    id: ITEM_ID_SEQ++,
+    key: definition.key,
+    name: definition.name,
+    icon: iconPath,
+    useType: definition.useType || 'KU',
+    definition,
+    state: 'idle',
+    context,
+    description: definition.description || '',
+    messageGet: typeof definition.messageGet === 'function'
+      ? definition.messageGet(context)
+      : (definition.messageGet || `You obtained ${definition.name}.`),
+    messageUse: typeof definition.messageUse === 'function'
+      ? definition.messageUse(context)
+      : (definition.messageUse || `${definition.name} was used.`),
+  };
+  return item;
+}
+
+function updateInventoryTooltip(item) {
+  const el = item.itemEl || item.el;
+  if (!el) return;
+  const detailText = item.description
+    || (item.definition && item.definition.description)
+    || item.messageUse;
+  const tooltipLines = [item.name];
+  if (detailText) tooltipLines.push(detailText);
+  tooltipLines.push(`Use Type: ${item.useType}`);
+  el.title = tooltipLines.filter(Boolean).join('\n');
+}
+
+function applyDefinitionToItem(item, definition) {
+  item.definition = definition;
+  item.name = definition.name || item.name;
+  item.useType = definition.useType || item.useType || 'KU';
+  if (definition.description) {
+    item.description = definition.description;
+  }
+
+  if (definition.file) {
+    item.icon = `${ITEM_ASSET_PATH}/${encodeURIComponent(definition.file)}`;
+    if (item.iconEl) {
+      item.iconEl.style.backgroundImage = `url("${item.icon}")`;
+    }
+  }
+
+  const context = item.context || {};
+  item.messageUse = typeof definition.messageUse === 'function'
+    ? definition.messageUse(context)
+    : (definition.messageUse || `${item.name} was used.`);
+
+  if (item.labelEl && item.name) {
+    item.labelEl.textContent = item.name;
+  }
+
+  updateInventoryTooltip(item);
+}
+
+function hydrateItemFromCatalog(item, catalog = null) {
+  const sourceCatalog = catalog || buildItemCatalog();
+  const definition = sourceCatalog.find((entry) => entry.key === item.key);
+  if (!definition) return;
+  applyDefinitionToItem(item, definition);
+}
+
+function refreshInventoryDefinitions(existingCatalog = null) {
+  if (!INVENTORY.length) return;
+  const catalog = existingCatalog || buildItemCatalog();
+  for (const item of INVENTORY) {
+    hydrateItemFromCatalog(item, catalog);
+  }
+}
+
+function installCustomItemDataObserver() {
+  if (typeof window === 'undefined') return;
+
+  const installPollingFallback = () => {
+    let lastRef = readCustomItemData();
+    setInterval(() => {
+      const latest = readCustomItemData();
+      if (latest !== lastRef) {
+        lastRef = latest;
+        refreshInventoryDefinitions();
+      }
+    }, 1200);
+  };
+
+  const descriptor = Object.getOwnPropertyDescriptor(window, 'CUSTOM_ITEM_DATA');
+  if (!descriptor || descriptor.configurable) {
+    let current = readCustomItemData();
+    try {
+      Object.defineProperty(window, 'CUSTOM_ITEM_DATA', {
+        configurable: true,
+        enumerable: true,
+        get() {
+          return current;
+        },
+        set(value) {
+          current = (value && typeof value === 'object') ? value : {};
+          refreshInventoryDefinitions();
+        },
+      });
+      if (descriptor && descriptor.set) {
+        descriptor.set.call(window, current);
+      }
+      if (current && typeof current === 'object') {
+        refreshInventoryDefinitions();
+      }
+    } catch (err) {
+      console.warn('Falling back to polling for CUSTOM_ITEM_DATA updates.', err);
+      installPollingFallback();
+    }
+  } else {
+    installPollingFallback();
+  }
+}
+
+installCustomItemDataObserver();
+
+/**
+ * Refresh the inventory button label/count and optionally pulse it when new
+ * loot drops so players notice immediately.
+ */
+function updateInventoryUIState({ highlightNew = false } = {}) {
+  if (!DOM.toggleInventory) return;
+
+  const count = INVENTORY.length;
+  DOM.toggleInventory.textContent = count > 0
+    ? `Inventory (${count})`
+    : 'Inventory';
+
+  if (count > 0) {
+    DOM.toggleInventory.classList.add('has-items');
+  } else {
+    DOM.toggleInventory.classList.remove('has-items');
+  }
+
+  if (highlightNew) {
+    DOM.toggleInventory.classList.add('inventory-button--pulse');
+    if (inventoryPulseTimeout) clearTimeout(inventoryPulseTimeout);
+    inventoryPulseTimeout = setTimeout(() => {
+      DOM.toggleInventory.classList.remove('inventory-button--pulse');
+      inventoryPulseTimeout = null;
+    }, 1600);
+  }
+}
+
+/**
+ * Add an item to the inventory state + DOM, wiring up the click handler that
+ * funnels into useItem().
+ */
+function addToInventory(item) {
+  INVENTORY.push(item);
+
+  if (!DOM.inventoryList) {
+    if (item.messageGet) logEvent(item.messageGet);
+    updateInventoryUIState({ highlightNew: true });
+    return;
+  }
+
+  const entry = document.createElement('button');
+  entry.type = 'button';
+  entry.className = 'inventory-item';
+  entry.dataset.itemId = item.id;
+
+  const icon = document.createElement('span');
+  icon.className = 'inventory-item__icon';
+  icon.style.backgroundImage = `url("${item.icon}")`;
+
+  const label = document.createElement('span');
+  label.className = 'inventory-item__name';
+  label.textContent = item.name;
+
+  entry.appendChild(icon);
+  entry.appendChild(label);
+  entry.title = `${item.name}\n${item.description || 'No description.'}\nUse Type: ${item.useType || 'Unknown'}`;
+
+  entry.addEventListener('click', () => useItem(item.id));
+
+  DOM.inventoryList.appendChild(entry);
+  item.el = entry;
+  item.itemEl = entry;
+  item.iconEl = icon;
+  item.labelEl = label;
+
+  hydrateItemFromCatalog(item);
+
+  if (item.messageGet) logEvent(item.messageGet);
+  updateInventoryUIState({ highlightNew: true });
+}
+
+/**
+ * Remove an item from inventory arrays/DOM.
+ */
+function removeItemFromInventory(item) {
+  INVENTORY = INVENTORY.filter((entry) => entry.id !== item.id);
+  const el = item.itemEl || item.el;
+  if (el && el.parentNode) {
+    el.parentNode.removeChild(el);
+  }
+  updateInventoryUIState();
+}
+
+/**
+ * When a Save-For-Later item is primed but a different one is chosen, tidy up
+ * the previous selection so the UI state stays accurate.
+ */
+function cancelPendingItem() {
+  if (!pendingSavedItem) return;
+  pendingSavedItem.state = 'idle';
+  const el = pendingSavedItem.itemEl || pendingSavedItem.el;
+  if (el) {
+    el.classList.remove('inventory-item--pending');
+  }
+  pendingSavedItem = null;
+}
+
+/**
+ * Core dispatcher: invoked when an inventory item is clicked. Handles each
+ * supported item use type (IU/SFL/SU/HU/KU).
+ */
+function useItem(itemRef) {
+  const item = typeof itemRef === 'object'
+    ? itemRef
+    : INVENTORY.find((entry) => entry.id === itemRef);
+  if (!item) return;
+
+  hydrateItemFromCatalog(item);
+
+  // Ensure only one Save-For-Later item is staged at a time.
+  if (pendingSavedItem && pendingSavedItem.id !== item.id) {
+    cancelPendingItem();
+  }
+
+  switch ((item.useType || 'KU').toUpperCase()) {
+    case 'SFL': {
+      if (item.state === 'awaiting-target') {
+        // Clicking again cancels the readied state.
+        cancelPendingItem();
+        logEvent(`${item.name} is no longer readied.`);
+        return;
+      }
+      pendingSavedItem = item;
+      item.state = 'awaiting-target';
+      const el = item.itemEl || item.el;
+      if (el) {
+        el.classList.add('inventory-item--pending');
+      }
+      logEvent(`${item.name} will apply to the next fish you click.`);
+      break;
+    }
+    case 'IU':
+    case 'HU':
+    case 'KU': {
+      applyItemEffect(item, null);
+      finalizeItemUse(item, { showMessage: true, targetFish: null });
+      break;
+    }
+    case 'SU': {
+      applyItemEffect(item, null);
+      finalizeItemUse(item, { showMessage: false, targetFish: null });
+      break;
+    }
+    default: {
+      // Unknown types fall back to a known-use behavior so the item isn't
+      // stranded. This can be tightened once all items have proper metadata.
+      applyItemEffect(item, null);
+      finalizeItemUse(item, { showMessage: true, targetFish: null });
+    }
+  }
+}
+
+/**
+ * Wrap up item usage: clear DOM, optionally show its message, and forget any
+ * staged Save-For-Later reference.
+ */
+function finalizeItemUse(item, { showMessage = true, targetFish = null } = {}) {
+  if (pendingSavedItem && pendingSavedItem.id === item.id) {
+    pendingSavedItem = null;
+  }
+  const el = item.itemEl || item.el;
+  if (el) {
+    el.classList.remove('inventory-item--pending');
+  }
+  removeItemFromInventory(item);
+
+  if (showMessage && item.messageUse) {
+    const message = typeof item.messageUse === 'function'
+      ? item.messageUse({ item, fish: targetFish })
+      : item.messageUse;
+    logEvent(message);
+  }
+}
+
+/**
+ * Execute the item's gameplay effect. The actual stat adjustments will be
+ * defined later; for now we call into an optional effect function so Phase 4
+ * can slot in seamlessly when details arrive.
+ */
+function applyItemEffect(item, fish) {
+  if (item.definition && typeof item.definition.effect === 'function') {
+    try {
+      item.definition.effect({ item, fish, FISH, logEvent });
+    } catch (err) {
+      console.error('Error applying item effect', err);
+      logEvent(`Something went wrong while using ${item.name}.`);
+    }
+  }
+}
+
+/**
+ * Roll a random item reward and drop it straight into the player's inventory.
+ */
+function awardRandomItemForVictory(winner) {
+  const catalog = buildItemCatalog();
+  if (!catalog.length) return;
+  const definition = randChoice(catalog);
+  const item = createItemInstance(definition, { winnerName: winner.name });
+  addToInventory(item);
+  refreshInventoryDefinitions(catalog);
+}
+
 function emoteAt(x, y, key) {
   const node = document.createElement('div');
   node.className = 'emote';
+  node.classList.add(`emote--${key}`);
   node.style.backgroundImage = `url("assets/emotes/${key}.gif")`;
   node.style.left = `${x}px`;
   node.style.top  = `${y}px`;
@@ -173,7 +629,7 @@ function createFish(opts = {}) {
   const y       = randInt(32, Math.max(40, ARENA.h - 128));
   const name    = opts.name || randChoice(NAME_POOL);
   const trait   = randChoice(TRAITS);
-  const power   = opts.power ?? randInt(0, 100);
+  const power   = opts.power ?? randInt(20, 100);
 
   const el = document.createElement('div');
   el.className = 'fish';
@@ -182,8 +638,6 @@ function createFish(opts = {}) {
   el.style.transform = `translate(0,0) scale(${size})`;
   el.style.filter = `hue-rotate(${hue}deg) saturate(1.25)`;
   el.style.backgroundImage = `url("assets/sprites/${species.defaultSprite}")`;
-  el.title = `${name} — ${trait}`;
-
   const fish = {
     id: ID_SEQ++,
     name, trait, power,
@@ -200,8 +654,11 @@ function createFish(opts = {}) {
     growthEndAt: opts.growthEndAt || null,
     mode: 'walk',        // animation mode: walk|idle|attack|hurt|death
     dead: false,
+    powerRevealed: Boolean(opts.powerRevealed),
     el,
   };
+
+  updateFishTitle(fish);
 
   el.addEventListener('click', () => onFishClick(fish.id));
 
@@ -210,6 +667,22 @@ function createFish(opts = {}) {
   updateFishCount();
   logEvent(`${fish.name} spawned (${fish.species}, trait: ${fish.trait}).`);
   return fish;
+}
+
+function updateFishTitle(fish) {
+  if (!fish || !fish.el) return;
+  const lines = [`${fish.name} — ${fish.trait}`];
+  if (fish.powerRevealed) {
+    lines.push(`Power: ${fish.power}`);
+  }
+  fish.el.title = lines.join('\n');
+}
+
+function revealFishPower(fish) {
+  if (!fish || fish.powerRevealed) return;
+  fish.powerRevealed = true;
+  updateFishTitle(fish);
+  logEvent(`${fish.name}'s power is ${fish.power}.`);
 }
 
 function removeFish(fish) {
@@ -222,6 +695,17 @@ function removeFish(fish) {
 function onFishClick(id) {
   const f = FISH.find(x => x.id === id);
   if (!f) return;
+
+  // Consume staged Save-For-Later items instead of starting a selection.
+  if (pendingSavedItem) {
+    const item = pendingSavedItem;
+    pendingSavedItem = null;
+    item.state = 'consumed';
+    applyItemEffect(item, f);
+    finalizeItemUse(item, { showMessage: item.useType !== 'SU', targetFish: f });
+    return;
+  }
+
   selection.push(f);
   emoteAtCenterOf(f, 'bubble');
 
@@ -289,6 +773,9 @@ function handleFight(a, b) {
   setMode(loser,  'hurt',   400);
 
   logEvent(`${winner.name} fought ${loser.name} — ${winner.name} wins!`);
+
+  // Reward the player with a random item following every victorious bout.
+  awardRandomItemForVictory(winner);
 
   winner.wins = (winner.wins || 0) + 1;
   if (winner.wins >= 10) {
@@ -483,7 +970,14 @@ function boot() {
   });
   DOM.toggleInventory.addEventListener('click', () => {
     DOM.inventoryPanel.classList.toggle('hidden');
+    if (inventoryPulseTimeout) {
+      clearTimeout(inventoryPulseTimeout);
+      inventoryPulseTimeout = null;
+    }
+    DOM.toggleInventory.classList.remove('inventory-button--pulse');
   });
+
+  updateInventoryUIState();
 
   for (let i = 0; i < INITIAL_FISH; i++) createFish();
 
