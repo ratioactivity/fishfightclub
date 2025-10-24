@@ -665,6 +665,8 @@ function createFish(opts = {}) {
     lastEncounterAt: 0,
     canFightAt: 0,
     wins: 0,
+    fightsWon: 0,
+    fightsLost: 0,
     growthEndAt: opts.growthEndAt || null,
     mode: 'walk',        // animation mode: walk|idle|attack|hurt|death
     dead: false,
@@ -686,6 +688,11 @@ function createFish(opts = {}) {
 function updateFishTitle(fish) {
   if (!fish || !fish.el) return;
   const lines = [`${fish.name} — ${fish.trait}`];
+  const wins = fish.fightsWon || 0;
+  const losses = fish.fightsLost || 0;
+  if (wins > 0 || losses > 0) {
+    lines.push(`Fights: ${wins} W / ${losses} L`);
+  }
   if (fish.powerRevealed) {
     lines.push(`Power: ${fish.power}`);
   }
@@ -782,11 +789,19 @@ function handleFight(a, b) {
   const winner = (b.power > a.power) ? b : a;
   const loser  = (winner === a) ? b : a;
 
+  winner.fightsWon = (winner.fightsWon || 0) + 1;
+  loser.fightsLost = (loser.fightsLost || 0) + 1;
+  updateFishTitle(winner);
+  updateFishTitle(loser);
+
   // play brief attack/hurt animation frames
   setMode(winner, 'attack', 400);
   setMode(loser,  'hurt',   400);
 
-  logEvent(`${winner.name} fought ${loser.name} — ${winner.name} wins!`);
+  logEvent(`${winner.name} (${winner.species}) defeated ${loser.name} (${loser.species})!`);
+
+  // Reward the player with a random item following every victorious bout.
+  awardRandomItemForVictory(winner);
 
   // Reward the player with a random item following every victorious bout.
   awardRandomItemForVictory(winner);
