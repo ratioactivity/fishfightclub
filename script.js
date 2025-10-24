@@ -286,6 +286,7 @@ function createItemInstance(definition, context = {}) {
     definition,
     state: 'idle',
     context,
+    description: definition.description || '',
     messageGet: typeof definition.messageGet === 'function'
       ? definition.messageGet(context)
       : (definition.messageGet || `You obtained ${definition.name}.`),
@@ -299,9 +300,9 @@ function createItemInstance(definition, context = {}) {
 function updateInventoryTooltip(item) {
   const el = item.itemEl || item.el;
   if (!el) return;
-  const detailText = item.definition && item.definition.description
-    ? item.definition.description
-    : item.messageUse;
+  const detailText = item.description
+    || (item.definition && item.definition.description)
+    || item.messageUse;
   const tooltipLines = [item.name];
   if (detailText) tooltipLines.push(detailText);
   tooltipLines.push(`Use Type: ${item.useType}`);
@@ -312,6 +313,9 @@ function applyDefinitionToItem(item, definition) {
   item.definition = definition;
   item.name = definition.name || item.name;
   item.useType = definition.useType || item.useType || 'KU';
+  if (definition.description) {
+    item.description = definition.description;
+  }
 
   if (definition.file) {
     item.icon = `${ITEM_ASSET_PATH}/${encodeURIComponent(definition.file)}`;
@@ -449,7 +453,7 @@ function addToInventory(item) {
 
   entry.appendChild(icon);
   entry.appendChild(label);
-  entry.title = `${item.name}\n${item.messageUse || 'No description.'}\nUse Type: ${item.useType || 'Unknown'}`;
+  entry.title = `${item.name}\n${item.description || 'No description.'}\nUse Type: ${item.useType || 'Unknown'}`;
 
   entry.addEventListener('click', () => useItem(item.id));
 
