@@ -474,6 +474,14 @@ entry.title = tooltipText.trim();
   item.iconEl = icon;
   item.labelEl = label;
 
+  // Fix tooltip display logic to remove "Use Type" and show proper descriptions
+let tooltipText = `${item.name}`;
+if (item.description) tooltipText += `\n${item.description}`;
+if (item.useType === 'KU' && item.definition?.useInfo) {
+  tooltipText += `\nEffect: ${item.definition.useInfo}`;
+}
+item.el.title = tooltipText.trim();
+  
   hydrateItemFromCatalog(item);
 
   if (item.messageGet) logEvent(item.messageGet);
