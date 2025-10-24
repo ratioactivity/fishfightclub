@@ -300,21 +300,13 @@ function createItemInstance(definition, context = {}) {
 function updateInventoryTooltip(item) {
   const el = item.itemEl || item.el;
   if (!el) return;
-
-  const desc =
-    item.description ||
-    (item.definition && item.definition.description) ||
-    'No description.';
-
-  const effect =
-    item.useType === 'KU'
-      ? (item.definition?.useInfo || item.useInfo || 'Activates automatically or on click.')
-      : '';
-
-  // Final tooltip
-  el.title = `${item.name}
-${desc}
-${item.useType === 'KU' ? `Effect: ${effect}` : ''}`;
+  const detailText = item.description
+    || (item.definition && item.definition.description)
+    || item.messageUse;
+  const tooltipLines = [item.name];
+  if (detailText) tooltipLines.push(detailText);
+  tooltipLines.push(`Use Type: ${item.useType}`);
+  el.title = tooltipLines.filter(Boolean).join('\n');
 }
 
 function applyDefinitionToItem(item, definition) {
@@ -404,7 +396,6 @@ function installCustomItemDataObserver() {
 }
 
 installCustomItemDataObserver();
-refreshInventoryDefinitions();
 
 /**
  * Refresh the inventory button label/count and optionally pulse it when new
@@ -460,13 +451,9 @@ function addToInventory(item) {
   label.className = 'inventory-item__name';
   label.textContent = item.name;
 
- entry.appendChild(icon);
-entry.appendChild(label);
-entry.title = `${item.name}
-${item.description || 'No description.'}
-${item.useType === 'KU'
-  ? `Effect: ${item.useInfo || 'Activates automatically or on click.'}`
-  : ''}`;
+  entry.appendChild(icon);
+  entry.appendChild(label);
+  entry.title = `${item.name}\n${item.description || 'No description.'}\nUse Type: ${item.useType || 'Unknown'}`;
 
   entry.addEventListener('click', () => useItem(item.id));
 
@@ -656,7 +643,7 @@ function createFish(opts = {}) {
   const y       = randInt(32, Math.max(40, ARENA.h - 128));
   const name    = opts.name || randChoice(NAME_POOL);
   const trait   = randChoice(TRAITS);
-  const power   = opts.power ?? randInt(0, 100);
+  const power   = opts.power ?? randInt(20, 100);
 
   const el = document.createElement('div');
   el.className = 'fish';
@@ -665,8 +652,6 @@ function createFish(opts = {}) {
   el.style.transform = `translate(0,0) scale(${size})`;
   el.style.filter = `hue-rotate(${hue}deg) saturate(1.25)`;
   el.style.backgroundImage = `url("assets/sprites/${species.defaultSprite}")`;
-  el.title = `${name} — ${trait}`;
-
   const fish = {
     id: ID_SEQ++,
     name, trait, power,
@@ -683,8 +668,11 @@ function createFish(opts = {}) {
     growthEndAt: opts.growthEndAt || null,
     mode: 'walk',        // animation mode: walk|idle|attack|hurt|death
     dead: false,
+    powerRevealed: Boolean(opts.powerRevealed),
     el,
   };
+
+  updateFishTitle(fish);
 
   el.addEventListener('click', () => onFishClick(fish.id));
 
@@ -693,6 +681,22 @@ function createFish(opts = {}) {
   updateFishCount();
   logEvent(`${fish.name} spawned (${fish.species}, trait: ${fish.trait}).`);
   return fish;
+}
+
+function updateFishTitle(fish) {
+  if (!fish || !fish.el) return;
+  const lines = [`${fish.name} — ${fish.trait}`];
+  if (fish.powerRevealed) {
+    lines.push(`Power: ${fish.power}`);
+  }
+  fish.el.title = lines.join('\n');
+}
+
+function revealFishPower(fish) {
+  if (!fish || fish.powerRevealed) return;
+  fish.powerRevealed = true;
+  updateFishTitle(fish);
+  logEvent(`${fish.name}'s power is ${fish.power}.`);
 }
 
 function removeFish(fish) {
