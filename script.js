@@ -1,3 +1,5 @@
+import { CUSTOM_ITEM_DATA } from './items.js';
+
 // ======= CONFIG =======
 const MAX_FISH = 10;
 const INITIAL_FISH = 4;
@@ -102,6 +104,15 @@ const EVENT_ENCOUNTER_CHANCES = {
 
 const ENCOUNTER_COOLDOWN_MS = 30 * 60 * 1000; // per fish — prevents >2/hr-ish
 const INJURY_COOLDOWN_MS    = 60 * 60 * 1000;
+
+const EMOTE_SIZES = {
+  bubble: 74,
+  fail: 74,
+  love: 74,
+  death: 96,
+  cry: 96,
+  fight: 112,
+};
 
 // ======= STATE =======
 const DOM = {
@@ -602,6 +613,9 @@ function emoteAt(x, y, key) {
   node.className = 'emote';
   node.classList.add(`emote--${key}`);
   node.style.backgroundImage = `url("assets/emotes/${key}.gif")`;
+  const size = EMOTE_SIZES[key] ?? 96;
+  node.style.width = `${size}px`;
+  node.style.height = `${size}px`;
   node.style.left = `${x}px`;
   node.style.top  = `${y}px`;
   DOM.emoteLayer.appendChild(node);
