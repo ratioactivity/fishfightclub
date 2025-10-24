@@ -449,7 +449,7 @@ function addToInventory(item) {
 
   entry.appendChild(icon);
   entry.appendChild(label);
-  entry.title = `${item.name}\n${item.messageUse || 'No description.'}\nUse: ${item.useType || 'Unknown'}`;
+  entry.title = `${item.name}\n${item.messageUse || 'No description.'}\nUse Type: ${item.useType || 'Unknown'}`;
 
   entry.addEventListener('click', () => useItem(item.id));
 

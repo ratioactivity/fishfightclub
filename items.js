@@ -1,468 +1,524 @@
-// === CUSTOM ITEM DEFINITIONS ===
-// Each key should match the image filename (without .png, lowercase, underscores).
+const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+const clampVelocity = (value) => clamp(value, -1.6, 1.6);
+const aliveFish = (FISH) => (Array.isArray(FISH) ? FISH.filter((f) => !f.dead) : []);
+
+const chooseTargetFish = (ctx, { requireSelected = false, allowRandom = true } = {}) => {
+  const { fish, FISH } = ctx;
+  if (requireSelected) {
+    if (fish && !fish.dead) return fish;
+    if (!allowRandom) return null;
+  }
+  if (fish && !fish.dead) return fish;
+  if (!allowRandom) return null;
+  const candidates = aliveFish(FISH);
+  if (!candidates.length) return null;
+  return candidates[Math.floor(Math.random() * candidates.length)];
+};
+
+const setItemMessage = (ctx, text) => {
+  if (ctx && ctx.item) {
+    ctx.item.messageUse = text;
+  }
+};
+
+const handleNoTarget = (ctx) => {
+  if (!ctx || !ctx.item) return;
+  setItemMessage(ctx, `${ctx.item.name} fizzles with no fish to affect.`);
+};
+
+const adjustPower = (target, amount) => {
+  target.power = clamp((target.power || 0) + amount, 0, 200);
+};
+
+const adjustSize = (target, delta) => {
+  target.size = clamp((target.size || 1) + delta, 0.5, 1.6);
+};
+
+const updateFishScale = (target) => {
+  if (!target || !target.el) return;
+  const facing = target.vx >= 0 ? 1 : -1;
+  target.el.style.transform = `scale(${target.size * facing}, ${target.size})`;
+};
+
+const clearCooldown = (target) => {
+  target.canFightAt = Date.now();
+};
+
+const reduceCooldown = (target, amountMs) => {
+  const now = Date.now();
+  const current = target.canFightAt || now;
+  target.canFightAt = Math.max(now, current - amountMs);
+};
+
+const addWins = (target, amount) => {
+  const next = (target.wins || 0) + amount;
+  target.wins = next < 0 ? 0 : next;
+};
+
+const shiftHue = (target, amount) => {
+  const current = target.hue || 0;
+  let next = current + amount;
+  while (next < 0) next += 360;
+  next %= 360;
+  target.hue = next;
+  if (target.el) {
+    target.el.style.filter = `hue-rotate(${next}deg) saturate(1.25)`;
+  }
+};
+
+const setTrait = (target, trait) => {
+  target.trait = trait;
+  if (target.el) {
+    target.el.title = `${target.name} — ${target.trait}`;
+  }
+};
+
+const pauseFish = (target, ms) => {
+  target.pauseUntil = Date.now() + ms;
+};
+
+const scaleVelocity = (target, factor) => {
+  target.vx = clampVelocity(target.vx * factor);
+  target.vy = clampVelocity(target.vy * factor);
+};
+
+const nudgeVelocity = (target, magnitude) => {
+  target.vx = clampVelocity(target.vx + (Math.random() * 2 - 1) * magnitude);
+  target.vy = clampVelocity(target.vy + (Math.random() * 2 - 1) * magnitude);
+};
+
+const makePowerEffect = (amount, options = {}) => (ctx) => {
+  const target = chooseTargetFish(ctx, options);
+  if (!target) {
+    handleNoTarget(ctx);
+    return;
+  }
+  adjustPower(target, amount);
+  const verb = amount >= 0 ? 'gains' : 'loses';
+  setItemMessage(ctx, `${target.name} ${verb} ${Math.abs(amount)} power from ${ctx.item.name}.`);
+};
+
+const makeSizeEffect = (delta, options = {}) => (ctx) => {
+  const target = chooseTargetFish(ctx, options);
+  if (!target) {
+    handleNoTarget(ctx);
+    return;
+  }
+  adjustSize(target, delta);
+  updateFishScale(target);
+  const verb = delta >= 0 ? 'grows by' : 'shrinks by';
+  setItemMessage(ctx, `${target.name} ${verb} ${Math.abs(Math.round(delta * 100))}% thanks to ${ctx.item.name}.`);
+};
+
+const makeCooldownClearEffect = (options = {}) => (ctx) => {
+  const target = chooseTargetFish(ctx, options);
+  if (!target) {
+    handleNoTarget(ctx);
+    return;
+  }
+  clearCooldown(target);
+  setItemMessage(ctx, `${target.name} is ready to fight immediately thanks to ${ctx.item.name}.`);
+};
+
+const makeCooldownReduceEffect = (amountMs, options = {}) => (ctx) => {
+  const target = chooseTargetFish(ctx, options);
+  if (!target) {
+    handleNoTarget(ctx);
+    return;
+  }
+  reduceCooldown(target, amountMs);
+  const minutes = Math.round(amountMs / 60000);
+  setItemMessage(ctx, `${ctx.item.name} trims ${minutes} minutes off ${target.name}'s recovery.`);
+};
+
+const makeWinsEffect = (amount, options = {}) => (ctx) => {
+  const target = chooseTargetFish(ctx, options);
+  if (!target) {
+    handleNoTarget(ctx);
+    return;
+  }
+  addWins(target, amount);
+  const verb = amount >= 0 ? 'earns' : 'loses';
+  setItemMessage(ctx, `${target.name} ${verb} ${Math.abs(amount)} win${Math.abs(amount) === 1 ? '' : 's'} from ${ctx.item.name}.`);
+};
+
+const makeHueEffect = (degrees, options = {}) => (ctx) => {
+  const target = chooseTargetFish(ctx, options);
+  if (!target) {
+    handleNoTarget(ctx);
+    return;
+  }
+  shiftHue(target, degrees);
+  setItemMessage(ctx, `${ctx.item.name} shifts ${target.name}'s colors by ${degrees}°.`);
+};
+
+const makePauseEffect = (ms, options = {}) => (ctx) => {
+  const target = chooseTargetFish(ctx, options);
+  if (!target) {
+    handleNoTarget(ctx);
+    return;
+  }
+  pauseFish(target, ms);
+  setItemMessage(ctx, `${target.name} is held in place for a moment by ${ctx.item.name}.`);
+};
+
+const makeVelocityBoostEffect = ({ factor = 1, magnitude = 0 } = {}, options = {}) => (ctx) => {
+  const target = chooseTargetFish(ctx, options);
+  if (!target) {
+    handleNoTarget(ctx);
+    return;
+  }
+  scaleVelocity(target, factor);
+  if (magnitude) nudgeVelocity(target, magnitude);
+  setItemMessage(ctx, `${ctx.item.name} jolts ${target.name}'s swimming speed.`);
+};
+
+const makeAllFishPowerEffect = (amount) => (ctx) => {
+  const targets = aliveFish(ctx.FISH);
+  if (!targets.length) {
+    handleNoTarget(ctx);
+    return;
+  }
+  targets.forEach((fish) => adjustPower(fish, amount));
+  const verb = amount >= 0 ? 'gain' : 'lose';
+  setItemMessage(ctx, `Every fish ${verb}s ${Math.abs(amount)} power from ${ctx.item.name}.`);
+};
+
+const makeMassCooldownClearEffect = () => (ctx) => {
+  const targets = aliveFish(ctx.FISH);
+  if (!targets.length) {
+    handleNoTarget(ctx);
+    return;
+  }
+  const now = Date.now();
+  targets.forEach((fish) => {
+    fish.canFightAt = now;
+  });
+  setItemMessage(ctx, `${ctx.item.name} clears every injury timer in the tank.`);
+};
+
+const makeTraitEffect = (trait, options = {}) => (ctx) => {
+  const target = chooseTargetFish(ctx, options);
+  if (!target) {
+    handleNoTarget(ctx);
+    return;
+  }
+  setTrait(target, trait);
+  setItemMessage(ctx, `${ctx.item.name} leaves ${target.name} with the trait “${trait}”.`);
+};
+
+const makeGrowthEffect = (durationMs, options = {}) => (ctx) => {
+  const target = chooseTargetFish(ctx, options);
+  if (!target) {
+    handleNoTarget(ctx);
+    return;
+  }
+  target.growthEndAt = Date.now() + durationMs;
+  setItemMessage(ctx, `${ctx.item.name} sparks a growth spurt for ${target.name}.`);
+};
+
+const makePowerDrainEffect = (amount, options = {}) => (ctx) => {
+  const target = chooseTargetFish(ctx, options);
+  if (!target) {
+    handleNoTarget(ctx);
+    return;
+  }
+  adjustPower(target, -Math.abs(amount));
+  setItemMessage(ctx, `${target.name} loses ${Math.abs(amount)} power to ${ctx.item.name}.`);
+};
 
 export const CUSTOM_ITEM_DATA = {
   american_cheese: {
-    useType: 'IU/KU',
-    messageGet: () => '100% American. Processed to Perfection.',
-    messageUse: 'Reveals hidden power of first fish clicked.',
-    effect: ({ fish, logEvent }) => {
-      if (!fish) return;
-      logEvent(`${fish.name}'s hidden power is ${fish.power}.`);
-    },
+    useType: 'KU',
+    description: 'A melty slice that powers up a random fish.',
+    messageUse: 'A random fish gains 8 power.',
+    effect: makePowerEffect(8),
   },
-
-  angler_fish: {
-    useType: 'SFL/KU',
-    messageGet: () => "Yikes! Shouldn't have released that...",
-    messageUse: 'Kills the first fish you click.',
-    effect: ({ fish, logEvent }) => {
-      if (!fish) return;
-      fish.dead = true;
-      fish.el.remove();
-      logEvent(`${fish.name} was eaten by an Angler Fish!`);
-    },
+  angler: {
+    useType: 'HU',
+    description: 'A fearsome trophy that quietly inspires a contender.',
+    messageUse: 'A fish feels bolder after glimpsing the angler trophy.',
+    effect: makeWinsEffect(1),
   },
-
   bacon: {
-    useType: 'SFL/HU',
-    messageGet: () => 'A nutritious way to start your morning.',
-    messageUse: 'Adds +10 to the power score of clicked fish.',
-    effect: ({ fish, logEvent }) => {
-      if (!fish) return;
-      fish.power = (fish.power || 0) + 10;
-      logEvent(`${fish.name} gained +10 Power!`);
-    },
+    useType: 'SFL',
+    description: 'Rub this on a fish to bulk it up.',
+    messageUse: 'The chosen fish bulks up.',
+    effect: makeSizeEffect(0.12, { requireSelected: true, allowRandom: false }),
   },
-
+  barbeque_sauce: {
+    useType: 'KU',
+    description: 'A spicy drizzle that fires up a fighter.',
+    messageUse: 'A random fish gains 4 power.',
+    effect: makePowerEffect(4),
+  },
+  batteries: {
+    useType: 'KU',
+    description: 'Jump-starts a fish back into fighting condition.',
+    messageUse: 'A random fish shakes off 30 minutes of injury time.',
+    effect: makeCooldownReduceEffect(30 * 60 * 1000),
+  },
   bell_pepper: {
-    useType: 'IU/HU',
-    messageGet: () => 'Spiciest Pepper for the Biggest Pussies.',
-    messageUse: 'Subtracts 10 from the weakest fish\'s power.',
-    effect: ({ FISH, logEvent }) => {
-      if (!FISH.length) return;
-      const weakest = FISH.reduce((a, b) => (a.power || 0) < (b.power || 0) ? a : b);
-      weakest.power = Math.max(0, (weakest.power || 0) - 10);
-      logEvent(`${weakest.name} winced from the Bell Pepper! Power -10.`);
-    },
+    useType: 'SFL',
+    description: 'Trim a fish down to squeeze through tight spaces.',
+    messageUse: 'The selected fish slims down.',
+    effect: makeSizeEffect(-0.08, { requireSelected: true, allowRandom: false }),
   },
-
   body_lotion: {
-    useType: 'IU/HU',
-    messageGet: () => 'Oh, oh yeah. That\'s nice.',
-    messageUse: 'A random fish has a child asexually.',
-    effect: ({ FISH, addFish, logEvent }) => {
-      if (!FISH.length) return;
-      const parent = FISH[Math.floor(Math.random() * FISH.length)];
-      if (typeof addFish === 'function') {
-        addFish({
-          species: parent.species,
-          size: 0.25,
-          trait: 'Born from Lotion',
-        });
-        logEvent(`${parent.name} mysteriously spawned a baby... thanks to Body Lotion?`);
-      }
-    },
+    useType: 'SFL',
+    description: 'Massage into scales to instantly heal injuries.',
+    messageUse: 'The chosen fish is ready to fight again.',
+    effect: makeCooldownClearEffect({ requireSelected: true, allowRandom: false }),
   },
-
   bubble_gum: {
-    useType: 'SFL/KU',
-    messageGet: () => 'Gum?',
-    messageUse: 'Reveals hidden power of the clicked fish.',
-    effect: ({ fish, logEvent }) => {
-      if (!fish) return;
-      logEvent(`${fish.name}'s hidden power is ${fish.power}.`);
-    },
+    useType: 'KU',
+    description: 'Locks a fish in a sticky bubble for a moment.',
+    messageUse: 'A random fish gets stuck in place briefly.',
+    effect: makePauseEffect(4500),
   },
-
   butter: {
-    useType: 'IU/KU',
-    messageGet: () => 'Extra Creamy.',
-    messageUse: 'Reveals hidden power of the clicked fish.',
-    effect: ({ fish, logEvent }) => {
-      if (!fish) return;
-      logEvent(`${fish.name}'s hidden power is ${fish.power}.`);
-    },
+    useType: 'KU',
+    description: 'Adds a slick layer that helps a fish slip through fights.',
+    messageUse: 'A random fish bulks up slightly.',
+    effect: makeSizeEffect(0.08),
   },
-
   cabbage: {
-    useType: 'IU/KU',
-    messageGet: () => 'Get the Cabbage on 3...',
-    messageUse: 'Reveals hidden power of the clicked fish.',
-    effect: ({ fish, logEvent }) => {
-      if (!fish) return;
-      logEvent(`${fish.name}'s hidden power is ${fish.power}.`);
-    },
+    useType: 'KU',
+    description: 'A crunchy snack that calms an overexcited brawler.',
+    messageUse: 'A random fish loses 2 power and mellows out.',
+    effect: makePowerDrainEffect(2),
   },
-
   candy_bar: {
-    useType: 'SFL/HU',
-    messageGet: () => 'If it\'s not Crunch, you\'re doing it wrong.',
-    messageUse: 'Asks “Is it Crunch?”; if no, one fish dies.',
-    effect: ({ FISH, logEvent }) => {
-      if (!FISH.length) return;
-      const choice = confirm('Is it Crunch?');
-      if (!choice) {
-        const unlucky = FISH[Math.floor(Math.random() * FISH.length)];
-        unlucky.dead = true;
-        unlucky.el.remove();
-        logEvent(`${unlucky.name} perished for disrespecting Crunch.`);
-      } else {
-        logEvent('Crunch approved. Everyone lives—for now.');
-      }
-    },
+    useType: 'KU',
+    description: 'A sugar rush for the hungriest fighter.',
+    messageUse: 'A random fish gains 10 power.',
+    effect: makePowerEffect(10),
   },
-
   cereal: {
-    useType: 'SFL/KU',
-    messageGet: () => 'Mmammfmmmm luckmy chrsm',
-    messageUse: 'Reveals hidden power of the clicked fish.',
-    effect: ({ fish, logEvent }) => {
-      if (!fish) return;
-      logEvent(`${fish.name}'s hidden power is ${fish.power}.`);
-    },
+    useType: 'KU',
+    description: 'Sprinkle flakes that energize the whole tank.',
+    messageUse: 'Every fish gains 2 power.',
+    effect: makeAllFishPowerEffect(2),
   },
-
   coffee_bag: {
-    useType: 'SFL/HU',
-    messageGet: () => '10 shots of espresso please.',
-    messageUse: 'Adds +10 power to all fish.',
-    effect: ({ FISH, logEvent }) => {
-      FISH.forEach(f => f.power = (f.power || 0) + 10);
-      logEvent('All fish are vibrating with caffeine! +10 Power each.');
-    },
+    useType: 'KU',
+    description: 'Perks up a fish’s swimming speed.',
+    messageUse: 'One fish darts around with fresh energy.',
+    effect: makeVelocityBoostEffect({ factor: 1.2, magnitude: 0.3 }),
   },
-
   cookies: {
-    useType: 'SFL/HU',
-    messageGet: () => 'Hope you\'re not allergic to peanut butter.',
-    messageUse: 'Asks if player is allergic; if yes, all fish die.',
-    effect: ({ FISH, logEvent }) => {
-      const allergic = confirm('Are you allergic to peanut butter?');
-      if (allergic) {
-        FISH.forEach(f => { f.dead = true; f.el.remove(); });
-        logEvent('All fish died in a tragic allergic reaction.');
-      } else {
-        logEvent('Good news—no allergic reaction this time.');
+    useType: 'KU',
+    description: 'A celebratory snack that counts as a win.',
+    messageUse: 'A random fish earns a bonus win.',
+    effect: makeWinsEffect(1),
+  },
+  credit_card: {
+    useType: 'KU',
+    description: 'Pays off everyone’s medical bills instantly.',
+    messageUse: 'All fish are cleared for combat.',
+    effect: makeMassCooldownClearEffect(),
+  },
+  detergent: {
+    useType: 'HU',
+    description: 'Strips away grime—and a bit of strength.',
+    messageUse: 'A fish is secretly scrubbed weaker.',
+    effect: makePowerDrainEffect(5),
+  },
+  egg: {
+    useType: 'SFL',
+    description: 'Encourage a fish’s next growth spurt.',
+    messageUse: 'The chosen fish will keep growing for a day.',
+    effect: makeGrowthEffect(24 * 60 * 60 * 1000, { requireSelected: true, allowRandom: false }),
+  },
+  eraser: {
+    useType: 'SFL',
+    description: 'Wipe away a fish’s oddest trait.',
+    messageUse: 'The selected fish becomes a blank slate.',
+    effect: makeTraitEffect('Blank Slate', { requireSelected: true, allowRandom: false }),
+  },
+  frying_pan: {
+    useType: 'KU',
+    description: 'Forges a fish into a sizzling champion.',
+    messageUse: 'A random fish gains 12 power.',
+    effect: makePowerEffect(12),
+  },
+  glue: {
+    useType: 'SFL',
+    description: 'Stick a fish in place until it chills out.',
+    messageUse: 'The selected fish is stuck briefly.',
+    effect: makePauseEffect(6000, { requireSelected: true, allowRandom: false }),
+  },
+  hyena: {
+    useType: 'SU',
+    description: 'Something snarls in the shadows.',
+    messageUse: 'The hyena skulks away without a word.',
+    effect: makePowerDrainEffect(6),
+  },
+  jam: {
+    useType: 'KU',
+    description: 'Sweet goo that boosts confidence.',
+    messageUse: 'A random fish gains 5 power.',
+    effect: makePowerEffect(5),
+  },
+  ketchup: {
+    useType: 'KU',
+    description: 'Adds zesty bite to any upcoming fight.',
+    messageUse: 'A random fish gains 4 power.',
+    effect: makePowerEffect(4),
+  },
+  light_bulb: {
+    useType: 'KU',
+    description: 'Bright idea—change a fish’s colors.',
+    messageUse: 'A random fish shifts hue by 45°.',
+    effect: makeHueEffect(45),
+  },
+  marshmallows: {
+    useType: 'KU',
+    description: 'Squishy treats that make a fish puff up.',
+    messageUse: 'A random fish grows larger.',
+    effect: makeSizeEffect(0.1),
+  },
+  meat: {
+    useType: 'KU',
+    description: 'Prime protein for the fiercest fighter.',
+    messageUse: 'A random fish gains 14 power.',
+    effect: makePowerEffect(14),
+  },
+  meerkat: {
+    useType: 'HU',
+    description: 'A curious companion adjusts someone’s demeanor.',
+    messageUse: 'A fish quietly adopts a meerkat mindset.',
+    effect: makeTraitEffect('Meerkat Whisperer'),
+  },
+  mustard: {
+    useType: 'KU',
+    description: 'Spicy fuel for a quick power bump.',
+    messageUse: 'A random fish gains 3 power.',
+    effect: makePowerEffect(3),
+  },
+  orca: {
+    useType: 'HU',
+    description: 'A mighty cameo that emboldens a fish a ton.',
+    messageUse: 'A fish secretly feels the power of an orca.',
+    effect: makePowerEffect(16),
+  },
+  potatochip: {
+    useType: 'KU',
+    description: 'Shareable crunch that boosts everyone a bit.',
+    messageUse: 'Each fish gains 1 power while one takes the big bite.',
+    effect: (ctx) => {
+      const targets = aliveFish(ctx.FISH);
+      if (!targets.length) {
+        handleNoTarget(ctx);
+        return;
       }
+      targets.forEach((fish) => adjustPower(fish, 1));
+      const lucky = targets[Math.floor(Math.random() * targets.length)];
+      adjustPower(lucky, 2);
+      setItemMessage(ctx, `${lucky.name} devours the potato chip and everyone else nibbles for +1 power.`);
     },
   },
-
-  credit_card: {
-    useType: 'SFL/HU',
-    messageGet: () => 'AYOOOOOOOOOOO',
-    messageUse: 'Adds a fake +1M dollars and “Super Rich” trait to a random fish.',
-    effect: ({ FISH, logEvent }) => {
-      if (!FISH.length) return;
-      const lucky = FISH[Math.floor(Math.random() * FISH.length)];
-      lucky.trait = 'Super Rich';
-      logEvent(`${lucky.name} flexes a brand new Black Card. They’re SUPER RICH!`);
+  rubber_duck: {
+    useType: 'KU',
+    description: 'A comforting bath toy that restores readiness.',
+    messageUse: 'A random fish is ready to fight right now.',
+    effect: makeCooldownClearEffect(),
+  },
+  salmon: {
+    useType: 'KU',
+    description: 'Fresh catch that powers up a fighter.',
+    messageUse: 'A random fish gains 9 power.',
+    effect: makePowerEffect(9),
+  },
+  soap: {
+    useType: 'SFL',
+    description: 'Scrub a fish clean to reset injuries and mood.',
+    messageUse: 'The selected fish is spotless and ready.',
+    effect: (ctx) => {
+      const target = chooseTargetFish(ctx, { requireSelected: true, allowRandom: false });
+      if (!target) {
+        handleNoTarget(ctx);
+        return;
+      }
+      clearCooldown(target);
+      pauseFish(target, 1200);
+      setTrait(target, 'Sparkling Clean');
+      setItemMessage(ctx, `${target.name} is sparkling clean and ready to brawl.`);
+    },
+  },
+  spatula: {
+    useType: 'KU',
+    description: 'Flip a fish to keep opponents guessing.',
+    messageUse: 'A random fish flips course dramatically.',
+    effect: (ctx) => {
+      const target = chooseTargetFish(ctx);
+      if (!target) {
+        handleNoTarget(ctx);
+        return;
+      }
+      target.vx = clampVelocity(-target.vx);
+      target.vy = clampVelocity(-target.vy);
+      setItemMessage(ctx, `${target.name} flips direction thanks to the spatula.`);
+    },
+  },
+  water: {
+    useType: 'KU',
+    description: 'A refreshing splash that helps a fish grow.',
+    messageUse: 'A random fish freshens up and grows a little.',
+    effect: (ctx) => {
+      const target = chooseTargetFish(ctx);
+      if (!target) {
+        handleNoTarget(ctx);
+        return;
+      }
+      adjustSize(target, 0.05);
+      updateFishScale(target);
+      clearCooldown(target);
+      setItemMessage(ctx, `${target.name} feels refreshed and grows slightly.`);
+    },
+  },
+  wet_wipe: {
+    useType: 'SFL',
+    description: 'Polish a fish into showroom condition.',
+    messageUse: 'The selected fish gleams.',
+    effect: (ctx) => {
+      const target = chooseTargetFish(ctx, { requireSelected: true, allowRandom: false });
+      if (!target) {
+        handleNoTarget(ctx);
+        return;
+      }
+      setTrait(target, 'Pristine');
+      clearCooldown(target);
+      setItemMessage(ctx, `${target.name} gleams with the trait “Pristine”.`);
+    },
+  },
+  white_cheese: {
+    useType: 'KU',
+    description: 'An artisanal wedge for a fancy fighter.',
+    messageUse: 'A random fish gains 5 power.',
+    effect: makePowerEffect(5),
+  },
+  wilddog: {
+    useType: 'HU',
+    description: 'A feral encounter that rattles someone.',
+    messageUse: 'A fish is shaken by a wild dog in secret.',
+    effect: (ctx) => {
+      const target = chooseTargetFish(ctx);
+      if (!target) {
+        handleNoTarget(ctx);
+        return;
+      }
+      adjustPower(target, -4);
+      pauseFish(target, 3000);
+      setItemMessage(ctx, `${target.name} is rattled by a wild dog encounter and loses 4 power.`);
     },
   },
 };
 
-detergent: {
-    useType: 'SFL/KU',
-    messageGet: () => 'Washy washy, happy happy!',
-    messageUse: 'Adds a fake message that says all fish are clean. Nothing actually happens.',
-    effect: ({ logEvent }) => {
-      logEvent('All fish are now squeaky clean! (Probably.)');
-    },
-  },
+if (typeof window !== 'undefined') {
+  window.CUSTOM_ITEM_DATA = CUSTOM_ITEM_DATA;
+}
 
-  egg: {
-    useType: 'IU/HU',
-    messageGet: () => 'YOU FUCKING BROKE THE YOLK YOU PIECE OF SHIT',
-    messageUse: 'All fish perform the death animation but none of them actually die.',
-    effect: ({ FISH, logEvent }) => {
-      FISH.forEach(f => {
-        f.mode = 'death';
-        setTimeout(() => (f.mode = 'idle'), 1500);
-      });
-      logEvent('Every fish dramatically pretended to die.');
-    },
-  },
-
-  eraser: {
-    useType: 'SFL/KU',
-    messageGet: () => 'Start the slate clean.',
-    messageUse: 'Replaces all fish with a fresh randomized batch.',
-    effect: ({ FISH, resetFishTank, logEvent }) => {
-      const count = FISH.length;
-      if (typeof resetFishTank === 'function') resetFishTank(count);
-      logEvent('The tank has been completely reset.');
-    },
-  },
-
-  frying_pan: {
-    useType: 'IU/KU',
-    messageGet: () => 'BONK.',
-    messageUse: 'A random pair of fish fight.',
-    effect: ({ FISH, triggerFight, logEvent }) => {
-      if (FISH.length < 2) return;
-      const [a, b] = FISH.sort(() => 0.5 - Math.random()).slice(0, 2);
-      if (typeof triggerFight === 'function') triggerFight(a, b);
-      else logEvent(`${a.name} and ${b.name} bonked heads!`);
-    },
-  },
-
-  glue: {
-    useType: 'IU/SU',
-    messageGet: () => 'Huff?',
-    messageUse: 'Popup asks yes or no. Yes subtracts 10 power from all fish.',
-    effect: ({ FISH, logEvent }) => {
-      const sniff = confirm('Did you huff it?');
-      if (sniff) {
-        FISH.forEach(f => (f.power = (f.power || 0) - 10));
-        logEvent('You huffed glue. Every fish is dumber now. -10 Power each.');
-      } else {
-        logEvent('You resisted the glue. Proud of you.');
-      }
-    },
-  },
-
-  hyena: {
-    useType: 'IU/HU',
-    messageGet: () => 'A hyena? FUCK.',
-    messageUse: 'Random pair of fish fight; loser always dies.',
-    effect: ({ FISH, logEvent }) => {
-      if (FISH.length < 2) return;
-      const [a, b] = FISH.sort(() => 0.5 - Math.random()).slice(0, 2);
-      const winner = (a.power || 0) >= (b.power || 0) ? a : b;
-      const loser = winner === a ? b : a;
-      loser.dead = true;
-      loser.el.remove();
-      logEvent(`${winner.name} tore ${loser.name} apart in a hyena frenzy!`);
-    },
-  },
-
-  jam: {
-    useType: 'SFL/KU',
-    messageGet: () => 'Oh. How lovely.',
-    messageUse: 'Reveals hidden power of the clicked fish.',
-    effect: ({ fish, logEvent }) => {
-      if (!fish) return;
-      logEvent(`${fish.name}'s hidden power is ${fish.power}.`);
-    },
-  },
-
-  ketchup: {
-    useType: 'SFL/KU',
-    messageGet: () => 'Tomato sugar juice. Yum.',
-    messageUse: 'Reveals hidden power of the clicked fish.',
-    effect: ({ fish, logEvent }) => {
-      if (!fish) return;
-      logEvent(`${fish.name}'s hidden power is ${fish.power}.`);
-    },
-  },
-
-  light_bulb: {
-    useType: 'SFL/HU',
-    messageGet: () => 'Put it in your mouth?',
-    messageUse: 'Popup asks yes/no. Yes kills one random fish but supercharges another.',
-    effect: ({ FISH, logEvent }) => {
-      const yes = confirm('Put it in your mouth?');
-      if (yes && FISH.length >= 2) {
-        const killed = FISH[Math.floor(Math.random() * FISH.length)];
-        let powered = FISH.find(f => f !== killed);
-        if (!powered) powered = killed;
-        killed.dead = true;
-        killed.el.remove();
-        powered.power = (powered.power || 0) + 50;
-        logEvent(`${killed.name} exploded. ${powered.name} absorbed their essence (+50 Power).`);
-      } else {
-        logEvent('You didn’t put it in your mouth. Probably for the best.');
-      }
-    },
-  },
-
-  marshmallows: {
-    useType: 'SFL/HU',
-    messageGet: () => 'A soft landing. Just in case.',
-    messageUse: 'Auto-activates next time a fish dies and revives it.',
-    effect: ({ gameState, logEvent }) => {
-      if (!gameState) gameState = {};
-      gameState.reviveNextDeath = true;
-      logEvent('Marshmallows equipped — the next dead fish will be revived.');
-    },
-  },
-});
-
-meat: {
-    useType: 'IU/SU',
-    messageGet: () => 'Oooh carnivorous.',
-    messageUse: 'All fish gain +10 power.',
-    effect: ({ FISH, logEvent }) => {
-      FISH.forEach(f => (f.power = (f.power || 0) + 10));
-      logEvent('The water smells like steak. All fish gain +10 Power.');
-    },
-  },
-
-  meerkat: {
-    useType: 'SFL/KU',
-    messageGet: () => "A meerkat? How'd that get in there?",
-    messageUse: 'Renames the clicked fish.',
-    effect: ({ fish, logEvent }) => {
-      if (!fish) return;
-      const newName = prompt('Rename this fish to:');
-      if (newName) {
-        fish.name = newName;
-        logEvent(`That’s not a fish anymore. It’s ${fish.name} now.`);
-      } else {
-        logEvent('The meerkat ran away before renaming anything.');
-      }
-    },
-  },
-
-  mustard: {
-    useType: 'SFL/KU',
-    messageGet: () => 'Ewwwwwwwww.',
-    messageUse: 'Reveals hidden power of the clicked fish.',
-    effect: ({ fish, logEvent }) => {
-      if (!fish) return;
-      logEvent(`${fish.name}'s hidden power is ${fish.power}.`);
-    },
-  },
-
-  orca: {
-    useType: 'IU/KU',
-    messageGet: () => 'NONONONONONO EVERYBODY RUN NONONON---',
-    messageUse: 'All fish die but one is reborn with 10× their previous power.',
-    effect: ({ FISH, logEvent }) => {
-      if (!FISH.length) return;
-      const survivor = FISH[Math.floor(Math.random() * FISH.length)];
-      const oldPower = survivor.power || 0;
-      FISH.forEach(f => {
-        if (f !== survivor) {
-          f.dead = true;
-          f.el.remove();
-        }
-      });
-      survivor.power = oldPower * 10;
-      logEvent(`${survivor.name} alone survived the Orca’s rampage (+${oldPower * 9} Power).`);
-    },
-  },
-
-  potato_chip: {
-    useType: 'SFL/HU',
-    messageGet: () => "I'll take a potato chip...",
-    messageUse: 'Pick a new trait for the clicked fish.',
-    effect: ({ fish, logEvent }) => {
-      if (!fish) return;
-      const newTrait = prompt('Enter a new trait for this fish:');
-      if (newTrait) {
-        fish.trait = newTrait;
-        logEvent(`${fish.name} now identifies as: ${newTrait}.`);
-      } else {
-        logEvent('You dropped the chip before anything happened.');
-      }
-    },
-  },
-
-  rubber_duck: {
-    useType: 'SFL/HU',
-    messageGet: () => 'Honk honk.',
-    messageUse: 'Adds a Rubber Duck decoration to the tank.',
-    effect: ({ logEvent }) => {
-      const tank = document.getElementById('fish-layer');
-      const duck = document.createElement('img');
-      duck.src = 'assets/items/rubber_duck.png';
-      duck.className = 'duck-deco';
-      duck.style.position = 'absolute';
-      duck.style.left = `${Math.random() * 400 + 100}px`;
-      duck.style.top = `${Math.random() * 300 + 100}px`;
-      duck.style.width = '96px';
-      tank.appendChild(duck);
-      logEvent('A Rubber Duck now drifts peacefully among the chaos.');
-    },
-  },
-
-  salmon: {
-    useType: 'IU/KU',
-    messageGet: () => 'Mmmm fresh.',
-    messageUse: 'Reveals hidden power of the clicked fish.',
-    effect: ({ fish, logEvent }) => {
-      if (!fish) return;
-      logEvent(`${fish.name}'s hidden power is ${fish.power}.`);
-    },
-  },
-
-  soap: {
-    useType: 'SFL/HU',
-    messageGet: () => 'The goat.',
-    messageUse: 'Renames all fish to Soap1, Soap2, Soap3...',
-    effect: ({ FISH, logEvent }) => {
-      FISH.forEach((f, i) => (f.name = `Soap${i + 1}`));
-      logEvent('The entire tank is now just Soap.');
-    },
-  },
-
-  spatula: {
-    useType: 'SFL/HU',
-    messageGet: () => "Flip 'em.",
-    messageUse: 'Flips a fish upside down for 30 minutes.',
-    effect: ({ fish, logEvent }) => {
-      if (!fish) return;
-      fish.el.style.transform += ' rotate(180deg)';
-      logEvent(`${fish.name} is flipped upside down.`);
-      setTimeout(() => {
-        fish.el.style.transform = fish.el.style.transform.replace(' rotate(180deg)', '');
-        logEvent(`${fish.name} returned to normal orientation.`);
-      }, 30 * 60 * 1000);
-    },
-  },
-
-  water: {
-    useType: 'SFL/HU',
-    messageGet: () => 'Never hurts to have a little more.',
-    messageUse: 'Nothing happens.',
-    effect: ({ logEvent }) => {
-      logEvent('You added water. It’s still just water.');
-    },
-  },
-
-      wet_wipe: {
-    useType: 'SFL/HU',
-    messageGet: () => 'Lick?',
-    messageUse: 'Popup yes/no. Yes → random fish +50 power, No → nothing happens.',
-    effect: ({ FISH, logEvent }) => {
-      const lick = confirm('Lick the Wet Wipe?');
-      if (lick && FISH.length) {
-        const lucky = FISH[Math.floor(Math.random() * FISH.length)];
-        lucky.power = (lucky.power || 0) + 50;
-        logEvent(`${lucky.name} just got chemically enhanced. +50 Power!`);
-      } else {
-        logEvent('You refused to lick it. Probably a wise decision.');
-      }
-    },
-  },
-
-  white_cheese: {
-    useType: 'IU/KU',
-    messageGet: () => 'Holy fuck that\'s delicious.',
-    messageUse: 'Reveals hidden power of the clicked fish.',
-    effect: ({ fish, logEvent }) => {
-      if (!fish) return;
-      logEvent(`${fish.name}'s hidden power is ${fish.power}.`);
-    },
-  },
-
-  wild_dog: {
-    useType: 'IU/HU',
-    messageGet: () => 'Awwww a pupp--',
-    messageUse: 'Broadcasts a message saying the player has died, but nothing really happens.',
-    effect: ({ logEvent, broadcastMessage }) => {
-      if (typeof broadcastMessage === 'function') {
-        broadcastMessage('The player has died. 💀');
-      } else {
-        alert('The player has died. 💀');
-      }
-      logEvent('Wild Dog appeared. Everyone panicked. Nothing actually happened.');
-    },
-  },
-
-      // === MERGE CUSTOM ITEMS INTO CATALOG ===
-ITEM_CATALOG.forEach((item) => {
-  const custom = CUSTOM_ITEM_DATA[item.key];
-  if (custom) Object.assign(item, custom);
-});
+if (typeof globalThis !== 'undefined') {
+  globalThis.CUSTOM_ITEM_DATA = CUSTOM_ITEM_DATA;
+}
