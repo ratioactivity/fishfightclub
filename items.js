@@ -1,4 +1,4 @@
-export const CUSTOM_ITEM_DATA = {
+window.CUSTOM_ITEM_DATA = {
   american_cheese: {
     description: "100% American. Processed to Perfection.",
     useType: "KU",
