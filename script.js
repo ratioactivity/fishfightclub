@@ -300,13 +300,21 @@ function createItemInstance(definition, context = {}) {
 function updateInventoryTooltip(item) {
   const el = item.itemEl || item.el;
   if (!el) return;
-  const detailText = item.description
+
+  // Prefer description + useInfo from the merged definition
+  const desc = item.description
     || (item.definition && item.definition.description)
-    || item.messageUse;
-  const tooltipLines = [item.name];
-  if (detailText) tooltipLines.push(detailText);
-  tooltipLines.push(`Use Type: ${item.useType}`);
-  el.title = tooltipLines.filter(Boolean).join('\n');
+    || 'No description.';
+
+  const effect =
+    item.useType === 'KU'
+      ? (item.definition?.seInfo || item.useInfo || 'Activates automatically or on click.')
+      : '';
+
+  // Final tooltip text
+  el.title = `${item.name}
+${desc}
+${effect ? `Effect: ${effect}` : ''}`;
 }
 
 function applyDefinitionToItem(item, definition) {
