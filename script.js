@@ -452,8 +452,18 @@ function addToInventory(item) {
   label.textContent = item.name;
 
   entry.appendChild(icon);
-  entry.appendChild(label);
-  entry.title = `${item.name}\n${item.description || 'No description.'}\nUse Type: ${item.useType || 'Unknown'}`;
+entry.appendChild(label);
+
+let tooltipText = `${item.name}`;
+if (item.description) tooltipText += `\n${item.description}`;
+
+// Show "Effect" for KU items only
+if (item.useType === 'KU' && item.definition?.useInfo) {
+  tooltipText += `\nEffect: ${item.definition.useInfo}`;
+}
+
+// For HU or SU, don’t show any use info — just the flavor text.
+entry.title = tooltipText.trim();
 
   entry.addEventListener('click', () => useItem(item.id));
 
