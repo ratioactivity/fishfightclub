@@ -300,13 +300,15 @@ function createItemInstance(definition, context = {}) {
 function updateInventoryTooltip(item) {
   const el = item.itemEl || item.el;
   if (!el) return;
-  const detailText = item.description
+  let tooltipText = `${item.name}`;
+  const description = item.description
     || (item.definition && item.definition.description)
-    || item.messageUse;
-  const tooltipLines = [item.name];
-  if (detailText) tooltipLines.push(detailText);
-  tooltipLines.push(`Use Type: ${item.useType}`);
-  el.title = tooltipLines.filter(Boolean).join('\n');
+    || '';
+  if (description) tooltipText += `\n${description}`;
+  if (item.useType === 'KU' && item.definition?.useInfo) {
+    tooltipText += `\nEffect: ${item.definition.useInfo}`;
+  }
+  el.title = tooltipText.trim();
 }
 
 function applyDefinitionToItem(item, definition) {
@@ -452,19 +454,14 @@ function addToInventory(item) {
   label.textContent = item.name;
 
   entry.appendChild(icon);
-entry.appendChild(label);
-
-// Build proper tooltip text
-let tooltipText = `${item.name}`;
-if (item.description) tooltipText += `\n${item.description}`;
-
-// Only show the effect if the use type is KU (Known Use)
-if (item.useType === 'KU' && item.definition?.useInfo) {
-  tooltipText += `\nEffect: ${item.definition.useInfo}`;
-}
-
-// For HU or SU, just skip showing any use info
-entry.title = tooltipText.trim();
+  entry.appendChild(label);
+  // Build tooltip text showing description and, for KU items, the effect line.
+  let tooltipText = `${item.name}`;
+  if (item.description) tooltipText += `\n${item.description}`;
+  if (item.useType === 'KU' && item.definition?.useInfo) {
+    tooltipText += `\nEffect: ${item.definition.useInfo}`;
+  }
+  entry.title = tooltipText.trim();
 
   entry.addEventListener('click', () => useItem(item.id));
 
@@ -474,14 +471,6 @@ entry.title = tooltipText.trim();
   item.iconEl = icon;
   item.labelEl = label;
 
-  // Fix tooltip display logic to remove "Use Type" and show proper descriptions
-let tooltipText = `${item.name}`;
-if (item.description) tooltipText += `\n${item.description}`;
-if (item.useType === 'KU' && item.definition?.useInfo) {
-  tooltipText += `\nEffect: ${item.definition.useInfo}`;
-}
-item.el.title = tooltipText.trim();
-  
   hydrateItemFromCatalog(item);
 
   if (item.messageGet) logEvent(item.messageGet);
@@ -818,9 +807,6 @@ function handleFight(a, b) {
   setMode(loser,  'hurt',   400);
 
   logEvent(`${winner.name} (${winner.species}) defeated ${loser.name} (${loser.species})!`);
-
-  // Reward the player with a random item following every victorious bout.
-  awardRandomItemForVictory(winner);
 
   // Reward the player with a random item following every victorious bout.
   awardRandomItemForVictory(winner);
