@@ -1,5 +1,3 @@
-import { CUSTOM_ITEM_DATA } from './items.js';
-
 // ======= CONFIG =======
 const MAX_FISH = 10;
 const INITIAL_FISH = 4;
