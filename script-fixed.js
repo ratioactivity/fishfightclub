@@ -476,7 +476,8 @@ hydrateItemFromCatalog(item);
 
 if (item.messageGet) logEvent(item.messageGet);
 updateInventoryUIState({ highlightNew: true });
-  
+}
+
 /**
  * Remove an item from inventory arrays/DOM.
  */
