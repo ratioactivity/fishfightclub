@@ -125,7 +125,6 @@ const DOM = {
   fishCount: document.getElementById('fish-count'),
 };
 
-let SHOW_ALL_POWER = false;
 function togglePowerView() {
   SHOW_ALL_POWER = !SHOW_ALL_POWER;
   for (const f of FISH) updateFishTitle(f);
@@ -138,6 +137,7 @@ let selection = [];
 let lastTick = performance.now();
 let pendingSavedItem = null;
 let inventoryPulseTimeout = null;
+let SHOW_ALL_POWER = false;
 
 // ======= ITEMS / INVENTORY CONFIG =======
 const ITEM_ASSET_PATH = 'assets/items';
