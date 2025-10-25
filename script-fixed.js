@@ -1028,5 +1028,3 @@ window.addEventListener('resize', () => {
   ARENA.w = aq.clientWidth;
   ARENA.h = aq.clientHeight;
 });
-
-}
