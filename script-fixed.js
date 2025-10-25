@@ -799,7 +799,6 @@ function handleFight(a, b) {
     return;
   }
 
-  // choose winner by hidden power
   const winner = (b.power > a.power) ? b : a;
   const loser  = (winner === a) ? b : a;
 
@@ -808,24 +807,22 @@ function handleFight(a, b) {
   updateFishTitle(winner);
   updateFishTitle(loser);
 
-  // play brief attack/hurt animation frames
   setMode(winner, 'attack', 400);
   setMode(loser,  'hurt',   400);
 
   logEvent(`${winner.name} (${winner.species}) defeated ${loser.name} (${loser.species})!`);
 
-  // Reward the player with a random item following every victorious bout.
+  // ✅ Only one reward
   awardRandomItemForVictory(winner);
 
   winner.wins = (winner.wins || 0) + 1;
   if (winner.wins >= 10) {
     logEvent(`${winner.name} achieved 10 wins! Spawning 3 children… then perishes.`);
     for (let i = 0; i < 3; i++) spawnBaby(winner, randChoice([a, b]));
-    killFish(winner, /*silent*/false);
+    killFish(winner, false);
     return;
   }
 
-  // loser 50% death, else injury cooldown
   if (Math.random() < 0.5) {
     killFish(loser);
   } else {
