@@ -817,9 +817,6 @@ function handleFight(a, b) {
   // Reward the player with a random item following every victorious bout.
   awardRandomItemForVictory(winner);
 
-  // Reward the player with a random item following every victorious bout.
-  awardRandomItemForVictory(winner);
-
   winner.wins = (winner.wins || 0) + 1;
   if (winner.wins >= 10) {
     logEvent(`${winner.name} achieved 10 wins! Spawning 3 children… then perishes.`);
