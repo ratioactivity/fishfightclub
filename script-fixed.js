@@ -464,28 +464,19 @@ if (item.useType === 'KU' && item.definition?.useInfo) {
 // For HU or SU, just skip showing any use info
 entry.title = tooltipText.trim();
 
-  entry.addEventListener('click', () => useItem(item.id));
+entry.addEventListener('click', () => useItem(item.id));
 
-  DOM.inventoryList.appendChild(entry);
-  item.el = entry;
-  item.itemEl = entry;
-  item.iconEl = icon;
-  item.labelEl = label;
+DOM.inventoryList.appendChild(entry);
+item.el = entry;
+item.itemEl = entry;
+item.iconEl = icon;
+item.labelEl = label;
 
-  // Fix tooltip display logic to remove "Use Type" and show proper descriptions
-let tooltipText = `${item.name}`;
-if (item.description) tooltipText += `\n${item.description}`;
-if (item.useType === 'KU' && item.definition?.useInfo) {
-  tooltipText += `\nEffect: ${item.definition.useInfo}`;
-}
-item.el.title = tooltipText.trim();
+hydrateItemFromCatalog(item);
+
+if (item.messageGet) logEvent(item.messageGet);
+updateInventoryUIState({ highlightNew: true });
   
-  hydrateItemFromCatalog(item);
-
-  if (item.messageGet) logEvent(item.messageGet);
-  updateInventoryUIState({ highlightNew: true });
-}
-
 /**
  * Remove an item from inventory arrays/DOM.
  */
