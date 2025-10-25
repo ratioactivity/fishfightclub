@@ -125,12 +125,11 @@ const DOM = {
   fishCount: document.getElementById('fish-count'),
 };
 
-let SHOW_ALL_POWER = false;
-window.togglePowerView = function () {
+function togglePowerView() {
   SHOW_ALL_POWER = !SHOW_ALL_POWER;
   for (const f of FISH) updateFishTitle(f);
   logEvent(SHOW_ALL_POWER ? "Cheat: Power display ON" : "Cheat: Power display OFF");
-};
+}
 
 let FISH = [];
 let INVENTORY = [];
@@ -1033,6 +1032,7 @@ function boot() {
 
 window.addEventListener('load', boot);
 window.addEventListener('resize', () => {
+window.togglePowerView = togglePowerView;
   const aq = document.getElementById('aquarium');
   ARENA.w = aq.clientWidth;
   ARENA.h = aq.clientHeight;
