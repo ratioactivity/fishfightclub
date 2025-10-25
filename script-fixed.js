@@ -298,13 +298,15 @@ function createItemInstance(definition, context = {}) {
 function updateInventoryTooltip(item) {
   const el = item.itemEl || item.el;
   if (!el) return;
-  const detailText = item.description
+  let tooltipText = `${item.name}`;
+  const description = item.description
     || (item.definition && item.definition.description)
-    || item.messageUse;
-  const tooltipLines = [item.name];
-  if (detailText) tooltipLines.push(detailText);
-  tooltipLines.push(`Use Type: ${item.useType}`);
-  el.title = tooltipLines.filter(Boolean).join('\n');
+    || '';
+  if (description) tooltipText += `\n${description}`;
+  if (item.useType === 'KU' && item.definition?.useInfo) {
+    tooltipText += `\nEffect: ${item.definition.useInfo}`;
+  }
+  el.title = tooltipText.trim();
 }
 
 function applyDefinitionToItem(item, definition) {
@@ -450,18 +452,18 @@ function addToInventory(item) {
   label.textContent = item.name;
 
   entry.appendChild(icon);
-entry.appendChild(label);
+  entry.appendChild(label);
 
-// Build proper tooltip text
-let tooltipText = `${item.name}`;
-if (item.description) tooltipText += `\n${item.description}`;
+  // Build proper tooltip text
+  let tooltipText = `${item.name}`;
+  if (item.description) tooltipText += `\n${item.description}`;
 
-// Only show the effect if the use type is KU (Known Use)
-if (item.useType === 'KU' && item.definition?.useInfo) {
-  tooltipText += `\nEffect: ${item.definition.useInfo}`;
-}
+  // Only show the effect if it’s a Known Use (KU)
+  if (item.useType === 'KU' && item.definition?.useInfo) {
+    tooltipText += `\nEffect: ${item.definition.useInfo}`;
+  }
 
-// For HU or SU, just skip showing any use info
+// For HU or SU, skip use info entirely
 entry.title = tooltipText.trim();
 
 entry.addEventListener('click', () => useItem(item.id));
