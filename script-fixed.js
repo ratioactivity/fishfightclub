@@ -812,7 +812,7 @@ function handleFight(a, b) {
 
   logEvent(`${winner.name} (${winner.species}) defeated ${loser.name} (${loser.species})!`);
 
-  // ✅ Only one reward replace function ( awardRandomItemForVictory(winner);) if no work
+  // ✅ Only one reward
 
   winner.wins = (winner.wins || 0) + 1;
   if (winner.wins >= 10) {
