@@ -711,12 +711,16 @@ function updateFishTitle(fish) {
   const lines = [`${fish.name} — ${fish.trait}`];
   const wins = fish.fightsWon || 0;
   const losses = fish.fightsLost || 0;
+
   if (wins > 0 || losses > 0) {
     lines.push(`Fights: ${wins} W / ${losses} L`);
   }
+
+  // Show power if revealed OR cheat is active
   if (fish.powerRevealed || SHOW_ALL_POWER) {
     lines.push(`Power: ${fish.power}`);
   }
+
   fish.el.title = lines.join('\n');
 }
 
