@@ -125,12 +125,19 @@ const DOM = {
   fishCount: document.getElementById('fish-count'),
 };
 
+let SHOW_ALL_POWER = false;
+window.togglePowerView = function () {
+  SHOW_ALL_POWER = !SHOW_ALL_POWER;
+  for (const f of FISH) updateFishTitle(f);
+  logEvent(SHOW_ALL_POWER ? "Cheat: Power display ON" : "Cheat: Power display OFF");
+};
+
 let FISH = [];
 let INVENTORY = [];
 let selection = [];
 let lastTick = performance.now();
 let pendingSavedItem = null;
-let inventoryPulseTimeout = null; // debounce handle for the inventory pulse animation
+let inventoryPulseTimeout = null;
 
 // ======= ITEMS / INVENTORY CONFIG =======
 const ITEM_ASSET_PATH = 'assets/items';
@@ -657,7 +664,7 @@ function createFish(opts = {}) {
   const y       = randInt(32, Math.max(40, ARENA.h - 128));
   const name    = opts.name || randChoice(NAME_POOL);
   const trait   = randChoice(TRAITS);
-  const power   = opts.power ?? randInt(20, 100);
+  const power = opts.power ?? randInt(20, 99); // never 100
 
   const el = document.createElement('div');
   el.className = 'fish';
@@ -707,7 +714,7 @@ function updateFishTitle(fish) {
   if (wins > 0 || losses > 0) {
     lines.push(`Fights: ${wins} W / ${losses} L`);
   }
-  if (fish.powerRevealed) {
+  if (fish.powerRevealed || SHOW_ALL_POWER) {
     lines.push(`Power: ${fish.power}`);
   }
   fish.el.title = lines.join('\n');
@@ -799,7 +806,10 @@ function handleFight(a, b) {
     return;
   }
 
-  const winner = (b.power > a.power) ? b : a;
+  // Weighted chance: higher power gives advantage, but not guarantee.
+  const total = a.power + b.power;
+  const roll = Math.random() * total;
+  const winner = (roll < a.power) ? a : b;
   const loser  = (winner === a) ? b : a;
 
   winner.fightsWon = (winner.fightsWon || 0) + 1;
