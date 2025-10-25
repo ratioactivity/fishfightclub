@@ -298,14 +298,17 @@ function createItemInstance(definition, context = {}) {
 function updateInventoryTooltip(item) {
   const el = item.itemEl || item.el;
   if (!el) return;
+
   let tooltipText = `${item.name}`;
   const description = item.description
     || (item.definition && item.definition.description)
     || '';
+
   if (description) tooltipText += `\n${description}`;
   if (item.useType === 'KU' && item.definition?.useInfo) {
     tooltipText += `\nEffect: ${item.definition.useInfo}`;
   }
+
   el.title = tooltipText.trim();
 }
 
