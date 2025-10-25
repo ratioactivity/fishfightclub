@@ -1039,3 +1039,6 @@ window.addEventListener('resize', () => {
   ARENA.w = aq.clientWidth;
   ARENA.h = aq.clientHeight;
 });
+
+// expose cheat to console:
+window.togglePowerView = togglePowerView;
