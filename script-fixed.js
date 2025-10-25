@@ -1031,7 +1031,8 @@ function boot() {
 }
 
 window.addEventListener('load', boot);
-window.togglePowerView = togglePowerView;
+window.togglePowerView = togglePowerView; // <-- add it here instead!
+
 window.addEventListener('resize', () => {
   const aq = document.getElementById('aquarium');
   ARENA.w = aq.clientWidth;
