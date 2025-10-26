@@ -245,11 +245,14 @@ function readCustomItemData() {
 function mergeDefinition(base, overrides) {
   if (!overrides) return { ...base };
   const merged = { ...base };
+
   for (const [prop, value] of Object.entries(overrides)) {
-    if (value !== undefined) {
-      merged[prop] = value;
-    }
+    if (value !== undefined) merged[prop] = value;
   }
+
+  // Explicitly ensure descriptions and useInfo persist
+  if (overrides.description && !merged.description) merged.description = overrides.description;
+  if (overrides.useInfo && !merged.useInfo) merged.useInfo = overrides.useInfo;
   return merged;
 }
 
@@ -478,17 +481,12 @@ function addToInventory(item) {
   entry.appendChild(icon);
   entry.appendChild(label);
 
-  // Build proper tooltip text
+ // Build tooltip text
 let tooltipText = `${item.name}`;
 if (item.description) tooltipText += `\n${item.description}`;
-
-// Show "Effect" line for Known Use or items with defined useInfo
-if (item.definition?.useInfo && (item.useType === 'KU' || item.definition?.effect)) {
-  tooltipText += `\nEffect: ${item.definition.useInfo}`;
-}
-
+if (item.definition?.useInfo) tooltipText += `\nEffect: ${item.definition.useInfo}`;
 entry.title = tooltipText.trim();
-
+  
 entry.addEventListener('click', () => useItem(item.id));
 
 DOM.inventoryList.appendChild(entry);
