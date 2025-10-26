@@ -201,3 +201,5 @@ window.CUSTOM_ITEM_DATA = {
     useInfo: "Broadcasts a fake message that the player has died without changing anything else.",
   },
 };
+
+if (typeof window !== "undefined") window.CUSTOM_ITEM_DATA = CUSTOM_ITEM_DATA;
