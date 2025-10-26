@@ -627,7 +627,6 @@ function revealPowerEffect({ fish, item, logEvent }) {
 function applyItemEffect(item, fish) {
   if (!item.definition) return;
 
-  // Allow either a function reference OR a string name (for load-order safety)
   const effectFunc =
     typeof item.definition.effect === "string"
       ? window[item.definition.effect]
