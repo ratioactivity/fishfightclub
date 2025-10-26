@@ -482,10 +482,8 @@ function addToInventory(item) {
 let tooltipText = `${item.name}`;
 if (item.description) tooltipText += `\n${item.description}`;
 
-// Only show the effect if it’s a Known Use (KU)
-if (item.useType === 'KU' && item.definition?.useInfo) {
-  tooltipText += `\nEffect: ${item.definition.useInfo}`;
-} else if (item.definition?.effect && item.definition?.useInfo) {
+// Show "Effect" line for Known Use or items with defined useInfo
+if (item.definition?.useInfo && (item.useType === 'KU' || item.definition?.effect)) {
   tooltipText += `\nEffect: ${item.definition.useInfo}`;
 }
 
