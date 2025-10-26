@@ -856,8 +856,7 @@ function handleFight(a, b) {
   logEvent(`${winner.name} (${winner.species}) defeated ${loser.name} (${loser.species})!`);
 
   // ✅ Only one reward
-  awardRandomItemForVictory(winner);
-
+  
   winner.wins = (winner.wins || 0) + 1;
   if (winner.wins >= 10) {
     logEvent(`${winner.name} achieved 10 wins! Spawning 3 children… then perishes.`);
