@@ -3,6 +3,7 @@ window.CUSTOM_ITEM_DATA = {
     description: "100% American. Processed to Perfection.",
     useType: "KU",
     useInfo: "Reveals the hidden power stat of the first fish you click after redeeming.",
+    effect: revealPowerEffect,
   },
   angler: {
     description: "Yikes! Shouldn't have released that...",
@@ -18,6 +19,7 @@ window.CUSTOM_ITEM_DATA = {
     description: "It's mid.",
     useType: "KU",
     useInfo: "Reveals the hidden power stat of the first fish you click after redeeming.",
+    effect: revealPowerEffect,
   },
   batteries: {
     description: "ZZZZZZZZZZZZZZZZZ",
@@ -38,16 +40,19 @@ window.CUSTOM_ITEM_DATA = {
     description: "Gum?",
     useType: "KU",
     useInfo: "Reveals the hidden power stat of the first fish you click after redeeming.",
+    effect: revealPowerEffect,
   },
   butter: {
     description: "Extra Creamy.",
     useType: "KU",
     useInfo: "Reveals the hidden power stat of the first fish you click after redeeming.",
+    effect: revealPowerEffect,
   },
   cabbage: {
     description: "Get the Cabbage on 3...",
     useType: "KU",
     useInfo: "Reveals the hidden power stat of the first fish you click after redeeming.",
+    effect: revealPowerEffect,
   },
   candy_bar: {
     description: "If it's not Crunch, you're doing it wrong.",
@@ -58,6 +63,7 @@ window.CUSTOM_ITEM_DATA = {
     description: "Mmammfmmmm luckmy chrsm",
     useType: "KU",
     useInfo: "Reveals the hidden power stat of the first fish you click after redeeming.",
+    effect: revealPowerEffect,
   },
   coffee_bag: {
     description: "10 shots of espresso please.",
@@ -108,11 +114,13 @@ window.CUSTOM_ITEM_DATA = {
     description: "Oh. How lovely.",
     useType: "KU",
     useInfo: "Reveals the hidden power stat of the first fish you click after redeeming.",
+    effect: revealPowerEffect,
   },
   ketchup: {
     description: "Tomato sugar juice. Yum.",
     useType: "KU",
     useInfo: "Reveals the hidden power stat of the first fish you click after redeeming.",
+    effect: revealPowerEffect,
   },
   light_bulb: {
     description: "Put it in your mouth?",
@@ -138,6 +146,7 @@ window.CUSTOM_ITEM_DATA = {
     description: "Ewwwwwwwww.",
     useType: "KU",
     useInfo: "Reveals the hidden power stat of the first fish you click after redeeming.",
+    effect: revealPowerEffect,
   },
   orca: {
     description: "NONONONONONO EVERYBODY RUN NONONON---",
@@ -158,6 +167,7 @@ window.CUSTOM_ITEM_DATA = {
     description: "Mmmm fresh.",
     useType: "KU",
     useInfo: "Reveals the hidden power stat of the first fish you click after redeeming.",
+    effect: revealPowerEffect,
   },
   soap: {
     description: "The goat.",
@@ -183,6 +193,7 @@ window.CUSTOM_ITEM_DATA = {
     description: "Holy fuck that's delicious.",
     useType: "KU",
     useInfo: "Reveals the hidden power stat of the first fish you click after redeeming.",
+    effect: revealPowerEffect,
   },
   wilddog: {
     description: "Awwww a pupp--",
