@@ -230,7 +230,7 @@ const buildBaseDefinitionFromFile = (fileName) => {
 const BASE_ITEM_DEFINITIONS = ITEM_FILES.map(buildBaseDefinitionFromFile);
 
 function readCustomItemData() {
-  if (typeof window !== 'undefined' && window.CUSTOM_ITEM_DATA && typeof window.CUSTOM_ITEM_DATA === 'object') {
+  if (typeof window !== 'undefined' && window.CUSTOM_ITEM_DATA && Object.keys(window.CUSTOM_ITEM_DATA).length > 0) {
     return window.CUSTOM_ITEM_DATA;
   }
   if (typeof globalThis !== 'undefined' && globalThis.CUSTOM_ITEM_DATA && typeof globalThis.CUSTOM_ITEM_DATA === 'object') {
@@ -423,6 +423,7 @@ function installCustomItemDataObserver() {
 }
 
 installCustomItemDataObserver();
+console.log("Loaded CUSTOM_ITEM_DATA:", readCustomItemData());
 
 /**
  * Refresh the inventory button label/count and optionally pulse it when new
