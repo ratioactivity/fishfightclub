@@ -465,15 +465,16 @@ function addToInventory(item) {
   entry.appendChild(label);
 
   // Build proper tooltip text
-  let tooltipText = `${item.name}`;
-  if (item.description) tooltipText += `\n${item.description}`;
+let tooltipText = `${item.name}`;
+if (item.description) tooltipText += `\n${item.description}`;
 
-  // Only show the effect if it’s a Known Use (KU)
-  if (item.useType === 'KU' && item.definition?.useInfo) {
-    tooltipText += `\nEffect: ${item.definition.useInfo}`;
-  }
+// Only show the effect if it’s a Known Use (KU)
+if (item.useType === 'KU' && item.definition?.useInfo) {
+  tooltipText += `\nEffect: ${item.definition.useInfo}`;
+} else if (item.definition?.effect && item.definition?.useInfo) {
+  tooltipText += `\nEffect: ${item.definition.useInfo}`;
+}
 
-// For HU or SU, skip use info entirely
 entry.title = tooltipText.trim();
 
 entry.addEventListener('click', () => useItem(item.id));
