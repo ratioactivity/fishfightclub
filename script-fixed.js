@@ -778,13 +778,13 @@ function onFishClick(id) {
 
   // Consume staged Save-For-Later items instead of starting a selection.
   if (pendingSavedItem) {
-    const item = pendingSavedItem;
-    pendingSavedItem = null;
-    item.state = 'consumed';
-    applyItemEffect(item, f);
-    finalizeItemUse(item, { showMessage: item.useType !== 'SU', targetFish: f });
-    return;
-  }
+  const item = pendingSavedItem;
+  pendingSavedItem = null;
+  item.state = 'consumed';
+  applyItemEffect(item, f);
+  finalizeItemUse(item, { showMessage: item.useType !== 'SU', targetFish: f });
+  return;
+}
 
   selection.push(f);
   emoteAtCenterOf(f, 'bubble');
