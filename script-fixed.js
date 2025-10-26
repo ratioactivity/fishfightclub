@@ -1,3 +1,17 @@
+window.revealPowerEffect = function ({ fish, item, logEvent }) {
+  if (!fish) {
+    logEvent(`${item.name} fizzles — you must click a fish next time.`);
+    return;
+  }
+  if (fish.powerRevealed) {
+    logEvent(`${fish.name}'s power is already known (${fish.power}).`);
+    return;
+  }
+  fish.powerRevealed = true;
+  updateFishTitle(fish);
+  logEvent(`${fish.name}'s power is revealed: ${fish.power}.`);
+};
+
 // ======= CONFIG =======
 const MAX_FISH = 10;
 const INITIAL_FISH = 4;
