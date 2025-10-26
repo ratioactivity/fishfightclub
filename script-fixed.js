@@ -625,11 +625,19 @@ function revealPowerEffect({ fish, item, logEvent }) {
  * can slot in seamlessly when details arrive.
  */
 function applyItemEffect(item, fish) {
-  if (item.definition && typeof item.definition.effect === 'function') {
+  if (!item.definition) return;
+
+  // Allow either a function reference OR a string name (for load-order safety)
+  const effectFunc =
+    typeof item.definition.effect === "string"
+      ? window[item.definition.effect]
+      : item.definition.effect;
+
+  if (typeof effectFunc === "function") {
     try {
-      item.definition.effect({ item, fish, FISH, logEvent });
+      effectFunc({ item, fish, FISH, logEvent });
     } catch (err) {
-      console.error('Error applying item effect', err);
+      console.error("Error applying item effect", err);
       logEvent(`Something went wrong while using ${item.name}.`);
     }
   }
