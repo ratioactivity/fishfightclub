@@ -6,7 +6,7 @@ if (typeof revealPowerEffect === "undefined") {
 window.CUSTOM_ITEM_DATA = {
   american_cheese: {
     description: "100% American. Processed to Perfection.",
-    useType: "KU",
+    useType: "SFL",
     useInfo: "Reveals the hidden power stat of the first fish you click after redeeming.",
     effect: "revealPowerEffect",
   },
@@ -22,7 +22,7 @@ window.CUSTOM_ITEM_DATA = {
   },
   barbeque_sauce: {
     description: "It's mid.",
-    useType: "KU",
+    useType: "SFL",
     useInfo: "Reveals the hidden power stat of the first fish you click after redeeming.",
     effect: "revealPowerEffect",
   },
@@ -43,19 +43,19 @@ window.CUSTOM_ITEM_DATA = {
   },
   bubble_gum: {
     description: "Gum?",
-    useType: "KU",
+    useType: "SFL",
     useInfo: "Reveals the hidden power stat of the first fish you click after redeeming.",
     effect: "revealPowerEffect",
   },
   butter: {
     description: "Extra Creamy.",
-    useType: "KU",
+    useType: "SFL",
     useInfo: "Reveals the hidden power stat of the first fish you click after redeeming.",
     effect: "revealPowerEffect",
   },
   cabbage: {
     description: "Get the Cabbage on 3...",
-    useType: "KU",
+    useType: "SFL",
     useInfo: "Reveals the hidden power stat of the first fish you click after redeeming.",
     effect: "revealPowerEffect",
   },
@@ -66,7 +66,7 @@ window.CUSTOM_ITEM_DATA = {
   },
   cereal: {
     description: "Mmammfmmmm luckmy chrsm",
-    useType: "KU",
+    useType: "SFL",
     useInfo: "Reveals the hidden power stat of the first fish you click after redeeming.",
     effect: "revealPowerEffect",
   },
@@ -117,13 +117,13 @@ window.CUSTOM_ITEM_DATA = {
   },
   jam: {
     description: "Oh. How lovely.",
-    useType: "KU",
+    useType: "SFL",
     useInfo: "Reveals the hidden power stat of the first fish you click after redeeming.",
     effect: "revealPowerEffect",
   },
   ketchup: {
     description: "Tomato sugar juice. Yum.",
-    useType: "KU",
+    useType: "SFL",
     useInfo: "Reveals the hidden power stat of the first fish you click after redeeming.",
     effect: "revealPowerEffect",
   },
@@ -149,7 +149,7 @@ window.CUSTOM_ITEM_DATA = {
   },
   mustard: {
     description: "Ewwwwwwwww.",
-    useType: "KU",
+    useType: "SFL",
     useInfo: "Reveals the hidden power stat of the first fish you click after redeeming.",
     effect: "revealPowerEffect",
   },
@@ -170,7 +170,7 @@ window.CUSTOM_ITEM_DATA = {
   },
   salmon: {
     description: "Mmmm fresh.",
-    useType: "KU",
+    useType: "SFL",
     useInfo: "Reveals the hidden power stat of the first fish you click after redeeming.",
     effect: "revealPowerEffect",
   },
@@ -196,7 +196,7 @@ window.CUSTOM_ITEM_DATA = {
   },
   white_cheese: {
     description: "Holy fuck that's delicious.",
-    useType: "KU",
+    useType: "SFL",
     useInfo: "Reveals the hidden power stat of the first fish you click after redeeming.",
     effect: "revealPowerEffect",
   },
