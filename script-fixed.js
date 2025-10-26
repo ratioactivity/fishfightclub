@@ -337,9 +337,9 @@ function applyDefinitionToItem(item, definition) {
   item.definition = definition;
   item.name = definition.name || item.name;
   item.useType = definition.useType || item.useType || 'KU';
-  if (definition.description) {
-    item.description = definition.description;
-  }
+  if (definition.description) item.description = definition.description;
+  if (definition.useInfo) item.useInfo = definition.useInfo;
+
 
   if (definition.file) {
     item.icon = `${ITEM_ASSET_PATH}/${encodeURIComponent(definition.file)}`;
