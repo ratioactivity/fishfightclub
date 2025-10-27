@@ -457,6 +457,7 @@ function updateInventoryUIState({ highlightNew = false } = {}) {
  * Add an item to the inventory state + DOM, wiring up the click handler that
  * funnels into useItem().
  */
+
 function addToInventory(item) {
   INVENTORY.push(item);
 
@@ -482,29 +483,27 @@ function addToInventory(item) {
   entry.appendChild(icon);
   entry.appendChild(label);
 
-// Build tooltip text
-let tooltipText = `${item.name}`;
-if (item.description) tooltipText += `\n${item.description}`;
+  // Make sure we have up-to-date definition data before tooltips
+  hydrateItemFromCatalog(item);
 
-// Only show effect if not Hidden Use (HU)
-if (item.definition?.useInfo && item.useType !== 'HU') {
-  tooltipText += `\nEffect: ${item.definition.useInfo}`;
-}
+  // Build tooltip text
+  let tooltipText = `${item.name}`;
+  if (item.description) tooltipText += `\n${item.description}`;
+  if (item.definition?.useInfo && item.useType !== 'HU') {
+    tooltipText += `\nEffect: ${item.definition.useInfo}`;
+  }
+  entry.title = tooltipText.trim();
 
-entry.title = tooltipText.trim();
+  entry.addEventListener('click', () => useItem(item.id));
 
-entry.addEventListener('click', () => useItem(item.id));
+  DOM.inventoryList.appendChild(entry);
+  item.el = entry;
+  item.itemEl = entry;
+  item.iconEl = icon;
+  item.labelEl = label;
 
-DOM.inventoryList.appendChild(entry);
-item.el = entry;
-item.itemEl = entry;
-item.iconEl = icon;
-item.labelEl = label;
-
-hydrateItemFromCatalog(item);
-
-if (item.messageGet) logEvent(item.messageGet);
-updateInventoryUIState({ highlightNew: true });
+  if (item.messageGet) logEvent(item.messageGet);
+  updateInventoryUIState({ highlightNew: true });
 }
 
 /**
