@@ -202,11 +202,13 @@ window.CUSTOM_ITEM_DATA = {
   },
 };
 
-// Bridge: convert string-based "effect" keys into real function references.
-for (const key in CUSTOM_ITEM_DATA) {
-  const def = CUSTOM_ITEM_DATA[key];
-  if (typeof def.effect === "string" && window[def.effect]) {
-    def.effect = window[def.effect];
+// Bridge: turn string-based "effect" references into real functions
+if (typeof window !== "undefined") {
+  for (const key in CUSTOM_ITEM_DATA) {
+    const def = CUSTOM_ITEM_DATA[key];
+    if (typeof def.effect === "string" && window[def.effect]) {
+      def.effect = window[def.effect];
+    }
   }
 }
 
