@@ -323,17 +323,21 @@ function updateInventoryTooltip(item) {
   const el = item.itemEl || item.el;
   if (!el) return;
 
-  let tooltipText = `${item.name}`;
-  const description = item.description
-    || (item.definition && item.definition.description)
-    || '';
+  const def = item.definition || {};
+  const useType = item.useType || def.useType || 'KU';
 
-  if (description) tooltipText += `\n${description}`;
-  if (item.useType === 'KU' && item.definition?.useInfo) {
-    tooltipText += `\nEffect: ${item.definition.useInfo}`;
+  const lines = [item.name];
+
+  // Description from runtime or definition
+  const desc = item.description || def.description || '';
+  if (desc) lines.push(desc);
+
+  // Show “Effect” for anything that is NOT HU
+  if (def.useInfo && useType !== 'HU') {
+    lines.push(`Effect: ${def.useInfo}`);
   }
 
-  el.title = tooltipText.trim();
+  el.title = lines.join('\n');
 }
 
 function applyDefinitionToItem(item, definition) {
@@ -483,25 +487,25 @@ function addToInventory(item) {
   entry.appendChild(icon);
   entry.appendChild(label);
 
-  // Make sure we have up-to-date definition data before tooltips
-  hydrateItemFromCatalog(item);
-
-  // Build tooltip text
-  let tooltipText = `${item.name}`;
-  if (item.description) tooltipText += `\n${item.description}`;
-  if (item.definition?.useInfo && item.useType !== 'HU') {
-    tooltipText += `\nEffect: ${item.definition.useInfo}`;
-  }
-  entry.title = tooltipText.trim();
-
-  entry.addEventListener('click', () => useItem(item.id));
-
+  // Attach to DOM
   DOM.inventoryList.appendChild(entry);
+
+  // Link references
   item.el = entry;
   item.itemEl = entry;
   item.iconEl = icon;
   item.labelEl = label;
 
+  // Always hydrate before tooltip building
+  hydrateItemFromCatalog(item);
+
+  // Build consistent tooltip text
+  updateInventoryTooltip(item);
+
+  // Hook click handler
+  entry.addEventListener('click', () => useItem(item.id));
+
+  // Log + pulse UI
   if (item.messageGet) logEvent(item.messageGet);
   updateInventoryUIState({ highlightNew: true });
 }
