@@ -482,12 +482,17 @@ function addToInventory(item) {
   entry.appendChild(icon);
   entry.appendChild(label);
 
- // Build tooltip text
+// Build tooltip text
 let tooltipText = `${item.name}`;
 if (item.description) tooltipText += `\n${item.description}`;
-if (item.definition?.useInfo) tooltipText += `\nEffect: ${item.definition.useInfo}`;
+
+// Only show effect if not Hidden Use (HU)
+if (item.definition?.useInfo && item.useType !== 'HU') {
+  tooltipText += `\nEffect: ${item.definition.useInfo}`;
+}
+
 entry.title = tooltipText.trim();
-  
+
 entry.addEventListener('click', () => useItem(item.id));
 
 DOM.inventoryList.appendChild(entry);
