@@ -609,6 +609,7 @@ function finalizeItemUse(item, { showMessage = true, targetFish = null } = {}) {
   }
 }
 
+// Reveal power effect (used by items like American Cheese)
 function revealPowerEffect({ fish, item, logEvent }) {
   if (!fish) {
     logEvent(`${item.name} fizzles — you must click a fish next time.`);
@@ -621,6 +622,11 @@ function revealPowerEffect({ fish, item, logEvent }) {
   fish.powerRevealed = true;
   updateFishTitle(fish);
   logEvent(`${fish.name}'s power is revealed: ${fish.power}.`);
+}
+
+// Make it accessible to items.js
+if (typeof window !== "undefined") {
+  window.revealPowerEffect = revealPowerEffect;
 }
 
 // ======= ITEM EFFECTS ======= //
