@@ -332,9 +332,9 @@ function updateInventoryTooltip(item) {
   const desc = item.description || def.description || '';
   if (desc) lines.push(desc);
 
-  // Show “Effect” for anything that is NOT HU
-  if (def.useInfo && useType !== 'HU') {
-    lines.push(`Effect: ${def.useInfo}`);
+  const useInfo = (item.useInfo || def.useInfo || '').trim();
+  if (useInfo && !['HU', 'SU'].includes(useType)) {
+    lines.push(`Item use: ${useInfo}`);
   }
 
   el.title = lines.join('\n');
