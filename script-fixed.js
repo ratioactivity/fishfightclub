@@ -31,7 +31,8 @@ const NAME_POOL = [
   "Brock","Brent","Brant","Brett","Bront","Brunt","Borst","John Cena","Mystery Liquid","Glass",
   "Glask","Audio Jack","Muffin","Dog1","Dog2","Dog3","Dog4","Dog5","Dog6","Dog7","Poker",
   "Dogs Playing Poker","HTML/JS/CSS","Plausible","Esra","Taro","Squirt","Shasta","Cosmic Brownie",
-  "Cannibalism","Kenny","Dribble a Little","Pike","Nether Wart"
+  "Cannibalism","Kenny","Dribble a Little","Pike","Nether Wart","Burry","Blake","Blaze","Furry",
+  "Schmiddle","Queef Condom"
 ];
 
 const TRAITS = [
@@ -50,7 +51,8 @@ const TRAITS = [
   "EEEEEEEEEE","Smells Like Chips","Stays Up Late","Bad Credit Score","Amazing Credit Score","Drinks Espresso",
   "Hates Espresso Drinkers","Pirate","Pirate Hunter","Pirate Hunter Hunter","Pirate Hunter Hunter Hunter",
   "Eats Breakfast","Has Teeth","Doesn't Lick","Dad","Likes Chopsticks","Dances Sometimes","Smiles Weird",
-  "Had Braces in 2nd Grade","Lobster Lover","Doesn't Like Indie","Super Rich","John Cena's Biggest Fan"
+  "Had Braces in 2nd Grade","Lobster Lover","Doesn't Like Indie","Super Rich","John Cena's Biggest Fan",
+  "Dyslexia","Is a Raging Furry","Laughs Like a Seal"
 ];
 
 // Species and default thumbnails
