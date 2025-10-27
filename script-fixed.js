@@ -624,6 +624,21 @@ function revealPowerEffect({ fish, item, logEvent }) {
   logEvent(`${fish.name}'s power is revealed: ${fish.power}.`);
 }
 
+// ======= ITEM EFFECTS ======= //
+window.revealPowerEffect = function({ fish, item, logEvent }) {
+  if (!fish) {
+    logEvent(`${item.name} fizzles — you must click a fish next time.`);
+    return;
+  }
+  if (fish.powerRevealed) {
+    logEvent(`${fish.name}'s power is already known (${fish.power}).`);
+    return;
+  }
+  fish.powerRevealed = true;
+  updateFishTitle(fish);
+  logEvent(`${fish.name}'s power is revealed: ${fish.power}.`);
+};
+
 /**
  * Execute the item's gameplay effect. The actual stat adjustments will be
  * defined later; for now we call into an optional effect function so Phase 4
