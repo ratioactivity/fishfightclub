@@ -1,8 +1,3 @@
-// placeholder to avoid load-order errors
-if (typeof revealPowerEffect === "undefined") {
-  window.revealPowerEffect = function() {};
-}
-
 window.CUSTOM_ITEM_DATA = {
   american_cheese: {
     description: "100% American. Processed to Perfection.",
