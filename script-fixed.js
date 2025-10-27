@@ -333,7 +333,7 @@ function updateInventoryTooltip(item) {
   if (desc) lines.push(desc);
 
   const useInfo = (item.useInfo || def.useInfo || '').trim();
-  if (useInfo && useType !== 'HU') {
+  if (useInfo && !['HU', 'SU'].includes(useType)) {
     lines.push(`Item use: ${useInfo}`);
   }
 
